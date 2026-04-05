@@ -1,0 +1,5 @@
+{
+  "name": "BudgetSystem",
+  "description": "Store management system for tracking sales, expenses, staff, and schedules.",
+  "requestFramePermissions": []
+}

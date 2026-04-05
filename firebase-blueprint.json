@@ -1,0 +1,202 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the system, either an admin or a store manager.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "The login username (e.g., admin, store1)"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "store"],
+          "description": "The role of the user."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "The ID of the store this user manages (if role is store)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address associated with the user."
+        }
+      },
+      "required": ["username", "role", "email"]
+    },
+    "Store": {
+      "title": "Store",
+      "description": "A physical store location.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "number": {
+          "type": "string"
+        },
+        "licenseExpiry": {
+          "type": "string",
+          "format": "date"
+        },
+        "waterFilterExpiry": {
+          "type": "string",
+          "format": "date"
+        },
+        "fireExtExpiry": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": ["name"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Daily sales record for a store.",
+      "type": "object",
+      "properties": {
+        "storeId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "netSales": {
+          "type": "number"
+        },
+        "totalAfterTax": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": ["storeId", "date", "netSales", "totalAfterTax"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "An expense record for a store.",
+      "type": "object",
+      "properties": {
+        "storeId": {
+          "type": "string"
+        },
+        "supplier": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "photoUrl": {
+          "type": "string"
+        }
+      },
+      "required": ["storeId", "supplier", "amount", "date"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "A staff member.",
+      "type": "object",
+      "properties": {
+        "storeId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "iqamaNumber": {
+          "type": "string"
+        },
+        "iqamaExpiry": {
+          "type": "string",
+          "format": "date"
+        },
+        "baladiaExpiry": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": ["storeId", "name"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "A daily schedule entry for a staff member.",
+      "type": "object",
+      "properties": {
+        "staffId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string"
+        },
+        "overtime": {
+          "type": "number"
+        }
+      },
+      "required": ["staffId", "date"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A supplier for expenses.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/stores/{storeId}": {
+      "schema": "Store",
+      "description": "Stores."
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Sales records."
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Expense records."
+    },
+    "/staff/{staffId}": {
+      "schema": "Staff",
+      "description": "Staff members."
+    },
+    "/schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Staff schedules."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Suppliers."
+    }
+  }
+}

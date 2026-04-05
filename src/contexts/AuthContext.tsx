@@ -68,6 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
+      if (error.code === 'auth/network-request-failed') {
+        throw new Error('Network error: Please disable ad blockers, Brave Shields, or check your internet connection.');
+      }
+      
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -81,10 +85,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           
           await signInWithEmailAndPassword(auth, email, password);
-        } catch (regError) {
-          throw new Error('Invalid credentials or failed to create account.');
+        } catch (regError: any) {
+          if (regError.code === 'auth/operation-not-allowed') {
+            throw new Error('Email/Password login is not enabled in Firebase. Please enable it in the Firebase Console.');
+          }
+          throw new Error(regError.message || 'Invalid credentials or failed to create account.');
         }
       } else {
+        if (error.code === 'auth/operation-not-allowed') {
+          throw new Error('Email/Password login is not enabled in Firebase. Please enable it in the Firebase Console.');
+        }
         throw error;
       }
     }

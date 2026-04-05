@@ -61,58 +61,62 @@ export default function Settings() {
     }
   };
 
-  if (loading) return <div className="p-4">Loading settings...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading settings...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-center justify-center mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <SettingsIcon className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <SettingsIcon className="w-6 h-6 text-slate-700" />
+          <h1 className="text-2xl font-bold text-slate-900 font-display">Settings</h1>
         </div>
-        <p className="text-sm text-gray-500 mb-4">Manage companies, stores, suppliers, and budgets.</p>
+        <p className="text-sm text-slate-500 mb-4">Manage companies, stores, suppliers, and budgets.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         {/* Manage Suppliers */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-blue-600 px-4 py-3 flex items-center gap-2">
+        <div className="card overflow-hidden">
+          <div className="bg-brand-600 px-4 py-3 flex items-center gap-2">
             <Building2 className="w-4 h-4 text-white" />
             <h3 className="text-white font-medium text-sm">Manage Suppliers</h3>
           </div>
-          <div className="p-4 space-y-4">
-            <form onSubmit={handleSaveSupplier}>
-              <h4 className="text-sm font-bold text-gray-900 mb-2">{editingSupplierId ? 'Edit Supplier' : 'Add New Supplier'}</h4>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Supplier Name <span className="text-red-500">*</span></label>
-              <input type="text" required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border mb-2" value={newSupplierName} onChange={e => setNewSupplierName(e.target.value)} />
+          <div className="p-5 space-y-5">
+            <form onSubmit={handleSaveSupplier} className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-900 mb-2">{editingSupplierId ? 'Edit Supplier' : 'Add New Supplier'}</h4>
+              <div>
+                <label className="label-text">Supplier Name <span className="text-red-500">*</span></label>
+                <input type="text" required className="input-field" value={newSupplierName} onChange={e => setNewSupplierName(e.target.value)} />
+              </div>
               
-              <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
-              <input type="text" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border mb-3" value={newSupplierPhone} onChange={e => setNewSupplierPhone(e.target.value)} />
+              <div>
+                <label className="label-text">Phone Number</label>
+                <input type="text" className="input-field" value={newSupplierPhone} onChange={e => setNewSupplierPhone(e.target.value)} />
+              </div>
               
-              <div className="flex gap-2">
-                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm font-medium flex items-center">
-                  <PlusCircle className="w-3 h-3 mr-1" /> {editingSupplierId ? 'Update' : 'Add Supplier'}
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="btn-primary">
+                  <PlusCircle className="w-4 h-4 mr-2" /> {editingSupplierId ? 'Update' : 'Add Supplier'}
                 </button>
                 {editingSupplierId && (
-                  <button type="button" onClick={() => { setEditingSupplierId(null); setNewSupplierName(''); setNewSupplierPhone(''); }} className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm font-medium">
+                  <button type="button" onClick={() => { setEditingSupplierId(null); setNewSupplierName(''); setNewSupplierPhone(''); }} className="btn-secondary">
                     Cancel
                   </button>
                 )}
               </div>
             </form>
-            <hr className="border-gray-200" />
+            <hr className="border-slate-100" />
             <div>
-              <h4 className="text-sm font-bold text-gray-900 mb-2">Existing Suppliers</h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <h4 className="text-sm font-bold text-slate-900 mb-3">Existing Suppliers</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                 {suppliers.length === 0 ? (
-                  <p className="text-sm text-gray-500">No suppliers found.</p>
+                  <p className="text-sm text-slate-500">No suppliers found.</p>
                 ) : (
                   suppliers.map(supplier => (
-                    <div key={supplier.id} className="flex justify-between items-center border border-gray-200 rounded p-2">
-                      <span className="text-sm text-gray-700">{supplier.name} <span className="text-xs text-gray-400">({supplier.phone || 'N/A'})</span></span>
-                      <div className="flex gap-1">
-                        <button onClick={() => handleEditSupplier(supplier)} className="text-blue-500 hover:text-blue-700 border border-blue-200 p-1 rounded"><Edit className="w-3 h-3" /></button>
-                        <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-500 hover:text-red-700 border border-red-200 p-1 rounded"><Trash2 className="w-3 h-3" /></button>
+                    <div key={supplier.id} className="flex justify-between items-center border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                      <span className="text-sm font-medium text-slate-700">{supplier.name} <span className="text-xs text-slate-400 font-normal ml-1">({supplier.phone || 'N/A'})</span></span>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEditSupplier(supplier)} className="text-brand-600 hover:text-brand-900 transition-colors p-1"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-500 hover:text-red-700 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   ))
@@ -123,13 +127,13 @@ export default function Settings() {
         </div>
 
         {/* Manage Budgets (Placeholder for future) */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden opacity-75">
-          <div className="bg-green-700 px-4 py-3 flex items-center gap-2">
+        <div className="card overflow-hidden opacity-75">
+          <div className="bg-emerald-600 px-4 py-3 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-white" />
             <h3 className="text-white font-medium text-sm">Manage Budgets (Coming Soon)</h3>
           </div>
-          <div className="p-4">
-            <p className="text-sm text-gray-500">Budget management features will be available in the next update.</p>
+          <div className="p-5">
+            <p className="text-sm text-slate-500">Budget management features will be available in the next update.</p>
           </div>
         </div>
       </div>

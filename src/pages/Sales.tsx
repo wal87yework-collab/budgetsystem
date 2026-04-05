@@ -167,16 +167,16 @@ export default function Sales() {
     sales: sale.totalAfterTax || 0
   }));
 
-  if (loading) return <div className="p-4">Loading sales data...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading sales data...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Sales Management</h1>
-        <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-2xl font-bold text-slate-900 font-display">Sales Management</h1>
+        <div className="flex flex-wrap items-center gap-3">
           {user?.role === 'admin' && (
             <select 
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+              className="input-field py-1.5 w-auto"
               value={filterStore}
               onChange={(e) => setFilterStore(e.target.value)}
             >
@@ -185,7 +185,7 @@ export default function Sales() {
             </select>
           )}
           <select 
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+            className="input-field py-1.5 w-auto"
             value={filterMonth}
             onChange={(e) => setFilterMonth(e.target.value)}
           >
@@ -195,7 +195,7 @@ export default function Sales() {
             <option value="10">10</option><option value="11">11</option><option value="12">12</option>
           </select>
           <select 
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+            className="input-field py-1.5 w-auto"
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
           >
@@ -211,7 +211,7 @@ export default function Sales() {
               setEditingId(null);
               setIsModalOpen(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium flex items-center"
+            className="btn-primary"
           >
             <PlusCircle className="w-4 h-4 mr-2" /> Add Record
           </button>
@@ -220,92 +220,92 @@ export default function Sales() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
-          <div className="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 mr-4">
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Total Sales</p>
-            <p className="text-xl font-bold text-gray-900">{totalSalesAmount.toFixed(2)} SAR</p>
+            <p className="text-sm font-medium text-slate-500">Total Sales</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalSalesAmount.toFixed(2)} SAR</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
-          <div className="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 mr-4">
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Total ATMs</p>
-            <p className="text-xl font-bold text-gray-900">{totalAtmsAmount.toFixed(2)} SAR</p>
+            <p className="text-sm font-medium text-slate-500">Total ATMs</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAtmsAmount.toFixed(2)} SAR</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
-          <div className="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 mr-4">
             <Smartphone className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Total Apps</p>
-            <p className="text-xl font-bold text-gray-900">{totalAppsAmount.toFixed(2)} SAR</p>
+            <p className="text-sm font-medium text-slate-500">Total Apps</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAppsAmount.toFixed(2)} SAR</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
-          <div className="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 mr-4">
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Final Cash</p>
-            <p className="text-xl font-bold text-gray-900">{totalCashAmount.toFixed(2)} SAR</p>
+            <p className="text-sm font-medium text-slate-500">Final Cash</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalCashAmount.toFixed(2)} SAR</p>
           </div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Sales Trend (Last 10 Records)</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold text-slate-800 font-display mb-6">Sales Trend (Last 10 Records)</h3>
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dx={-10} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} dx={-10} />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '0.5rem', color: '#F9FAFB' }}
-                itemStyle={{ color: '#F9FAFB' }}
+                contentStyle={{ backgroundColor: '#0F172A', border: 'none', borderRadius: '0.75rem', color: '#F8FAFC', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                itemStyle={{ color: '#F8FAFC' }}
               />
-              <Line type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="card">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Sales</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total After Tax</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Final Cash</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="table-header">Store</th>
+                <th className="table-header">Date</th>
+                <th className="table-header text-right">Net Sales</th>
+                <th className="table-header text-right">Total After Tax</th>
+                <th className="table-header text-right">Final Cash</th>
+                <th className="table-header text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {filteredSales.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">No sales records found.</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">No sales records found for the selected period.</td></tr>
               ) : (
                 filteredSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.storeId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{sale.netSales?.toFixed(2) || '0.00'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">{sale.totalAfterTax?.toFixed(2) || '0.00'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium text-green-600">{sale.finalCashSales?.toFixed(2) || '0.00'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <div className="flex justify-center gap-2">
-                        <button onClick={() => handleEdit(sale)} className="text-blue-600 hover:text-blue-900"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(sale.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4" /></button>
+                  <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="table-cell font-medium">{sale.storeId}</td>
+                    <td className="table-cell text-slate-500">{sale.date}</td>
+                    <td className="table-cell text-right">{sale.netSales?.toFixed(2) || '0.00'}</td>
+                    <td className="table-cell text-right font-medium text-slate-900">{sale.totalAfterTax?.toFixed(2) || '0.00'}</td>
+                    <td className="table-cell text-right font-medium text-emerald-600">{sale.finalCashSales?.toFixed(2) || '0.00'}</td>
+                    <td className="table-cell text-center">
+                      <div className="flex justify-center gap-3">
+                        <button onClick={() => handleEdit(sale)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(sale.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -318,24 +318,24 @@ export default function Sales() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Sales Record' : 'Add New Sales Record'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-8 transform transition-all">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 font-display">{editingId ? 'Edit Sales Record' : 'Add New Sales Record'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSave} className="p-6 space-y-8 max-h-[75vh] overflow-y-auto">
               {/* Row 1 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Store <span className="text-red-500">*</span></label>
+                  <label className="label-text">Store <span className="text-red-500">*</span></label>
                   <select 
                     required
                     disabled={user?.role === 'store'}
-                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border disabled:bg-gray-100"
+                    className="input-field"
                     value={formData.storeId}
                     onChange={e => setFormData({...formData, storeId: e.target.value})}
                   >
@@ -347,10 +347,10 @@ export default function Sales() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Sale Date <span className="text-red-500">*</span></label>
+                  <label className="label-text">Sale Date <span className="text-red-500">*</span></label>
                   <input 
                     type="date" required
-                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border"
+                    className="input-field"
                     value={formData.date}
                     onChange={e => setFormData({...formData, date: e.target.value})}
                   />
@@ -358,144 +358,146 @@ export default function Sales() {
               </div>
 
               {/* Sales Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Sales</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Sales</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Net Sales</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.netSales} onChange={e => setFormData({...formData, netSales: e.target.value})} />
+                    <label className="label-text">Net Sales</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.netSales} onChange={e => setFormData({...formData, netSales: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Tax</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={tax.toFixed(2)} />
+                    <label className="label-text">Tax (15%)</label>
+                    <input type="text" readOnly className="input-field bg-slate-100 text-slate-500 border-transparent font-medium" value={tax.toFixed(2)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Total After Tax</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={totalAfterTax.toFixed(2)} />
+                    <label className="label-text">Total After Tax</label>
+                    <input type="text" readOnly className="input-field bg-brand-50 text-brand-700 border-brand-100 font-bold" value={totalAfterTax.toFixed(2)} />
                   </div>
                 </div>
               </div>
 
               {/* ATMs Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">ATMs</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">ATMs</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Mastercard</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.mastercard} onChange={e => setFormData({...formData, mastercard: e.target.value})} />
+                    <label className="label-text">Mastercard</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.mastercard} onChange={e => setFormData({...formData, mastercard: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Span</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.span} onChange={e => setFormData({...formData, span: e.target.value})} />
+                    <label className="label-text">Span</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.span} onChange={e => setFormData({...formData, span: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Visa</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.visa} onChange={e => setFormData({...formData, visa: e.target.value})} />
+                    <label className="label-text">Visa</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.visa} onChange={e => setFormData({...formData, visa: e.target.value})} />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Total ATMs</label>
-                  <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={totalAtms.toFixed(2)} />
+                  <div>
+                    <label className="label-text">Total ATMs</label>
+                    <input type="text" readOnly className="input-field bg-slate-100 text-slate-500 border-transparent font-medium" value={totalAtms.toFixed(2)} />
+                  </div>
                 </div>
               </div>
 
               {/* Apps Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Apps</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Apps</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Stc</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
+                    <label className="label-text">Stc</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Wasal</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
+                    <label className="label-text">Wasal</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">To You</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
+                    <label className="label-text">To You</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Jahez</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />
+                    <label className="label-text">Jahez</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Hunger Station</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.hungerStation} onChange={e => setFormData({...formData, hungerStation: e.target.value})} />
+                    <label className="label-text">Hunger Station</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.hungerStation} onChange={e => setFormData({...formData, hungerStation: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Total Apps</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={totalApps.toFixed(2)} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fees Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Fees</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Royalty Fee (8%)</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={royaltyFee.toFixed(2)} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Marketing (4.5%)</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={marketingFee.toFixed(2)} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Total Fees</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={totalFees.toFixed(2)} />
+                    <label className="label-text">Total Apps</label>
+                    <input type="text" readOnly className="input-field bg-slate-100 text-slate-500 border-transparent font-medium" value={totalApps.toFixed(2)} />
                   </div>
                 </div>
               </div>
 
-              {/* Petty Cash Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Petty Cash</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Advance</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.advance} onChange={e => setFormData({...formData, advance: e.target.value})} />
+              {/* Fees & Petty Cash Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Fees</h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="label-text mb-0">Royalty Fee (8%)</label>
+                      <span className="font-medium text-slate-700">{royaltyFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <label className="label-text mb-0">Marketing (4.5%)</label>
+                      <span className="font-medium text-slate-700">{marketingFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                      <label className="label-text mb-0 font-bold">Total Fees</label>
+                      <span className="font-bold text-slate-900">{totalFees.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Used</label>
-                    <input type="number" step="0.01" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.used} onChange={e => setFormData({...formData, used: e.target.value})} />
+                </div>
+
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Petty Cash</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="label-text">Advance</label>
+                      <input type="number" step="0.01" className="input-field" value={formData.advance} onChange={e => setFormData({...formData, advance: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text">Used</label>
+                      <input type="number" step="0.01" className="input-field" value={formData.used} onChange={e => setFormData({...formData, used: e.target.value})} />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Cash Sales Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Cash Sales</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
+                <h3 className="text-sm font-bold text-emerald-800 mb-4 uppercase tracking-wider">Final Calculation</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Cash Sales Of Day</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={cashSalesOfDay.toFixed(2)} />
+                    <label className="label-text text-emerald-700">Cash Sales Of Day</label>
+                    <input type="text" readOnly className="input-field bg-white/50 border-emerald-200 text-emerald-800 font-medium" value={cashSalesOfDay.toFixed(2)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Final Cash Sales</label>
-                    <input type="text" readOnly className="w-full bg-gray-100 border-gray-200 rounded-md shadow-sm sm:text-sm py-2 px-3 border text-gray-500" value={finalCashSales.toFixed(2)} />
+                    <label className="label-text text-emerald-800 font-bold">Final Cash Sales</label>
+                    <input type="text" readOnly className="input-field bg-emerald-600 text-white border-transparent font-bold text-lg" value={finalCashSales.toFixed(2)} />
                   </div>
                 </div>
               </div>
 
               {/* Notes Section */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                <label className="label-text">Notes</label>
                 <textarea 
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" 
+                  className="input-field" 
                   rows={3}
                   value={formData.notes}
                   onChange={e => setFormData({...formData, notes: e.target.value})}
+                  placeholder="Any additional notes or comments..."
                 ></textarea>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  Close
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">
+                  Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                  {editingId ? 'Update Record' : 'Add Record'}
+                <button type="submit" className="btn-primary">
+                  {editingId ? 'Update Record' : 'Save Record'}
                 </button>
               </div>
             </form>

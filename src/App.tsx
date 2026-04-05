@@ -16,9 +16,7 @@ import Stores from './pages/Stores';
 import Settings from './pages/Settings';
 
 import Admin from './pages/Admin';
-
-// Placeholder components for other routes
-const Inventory = () => <div className="p-4 bg-white rounded shadow">Inventory Cost Content</div>;
+import Inventory from './pages/Inventory';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, loading } = useAuth();

@@ -111,18 +111,18 @@ export default function Staff() {
     return true;
   });
 
-  if (loading) return <div className="p-4">Loading staff...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading staff...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
+          <h1 className="text-2xl font-bold text-slate-900 font-display">Staff Management</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {user?.role === 'admin' && (
             <select 
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+              className="input-field py-1.5 w-auto"
               value={filterStore}
               onChange={(e) => setFilterStore(e.target.value)}
             >
@@ -139,62 +139,62 @@ export default function Staff() {
               setEditingId(null);
               setIsModalOpen(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium flex items-center"
+            className="btn-primary"
           >
             <PlusCircle className="w-4 h-4 mr-2" /> Add Staff
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="card">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Iqama No.</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Iqama Expiry</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Baladia Expiry</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="table-header">Store</th>
+                <th className="table-header">Name</th>
+                <th className="table-header">Phone</th>
+                <th className="table-header">Iqama No.</th>
+                <th className="table-header">Iqama Expiry</th>
+                <th className="table-header">Baladia Expiry</th>
+                <th className="table-header text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {filteredStaff.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">No staff found.</td></tr>
+                <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">No staff found.</td></tr>
               ) : (
                 filteredStaff.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{member.storeId}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={member.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="table-cell font-medium">{member.storeId}</td>
+                    <td className="table-cell font-medium text-slate-900">
                       <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-gray-400" />
+                        <Users className="w-4 h-4 text-slate-400" />
                         {member.name}
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{member.phone}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{member.iqamaNumber}</td>
-                    <td className="px-4 py-3 whitespace-pre-line text-sm text-gray-900">
+                    <td className="table-cell">{member.phone}</td>
+                    <td className="table-cell">{member.iqamaNumber}</td>
+                    <td className="table-cell whitespace-pre-line">
                       {member.iqamaExpiry}
                       <div className="mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${member.iqamaRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${member.iqamaRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
                           {member.iqamaRem}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-pre-line text-sm text-gray-900">
+                    <td className="table-cell whitespace-pre-line">
                       {member.baladiaExpiry}
                       <div className="mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${member.baladiaRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${member.baladiaRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
                           {member.baladiaRem}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                      <div className="flex justify-center gap-2">
-                        <button onClick={() => handleEdit(member)} className="text-blue-600 hover:text-blue-900"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(member.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4" /></button>
+                    <td className="table-cell text-center">
+                      <div className="flex justify-center gap-3">
+                        <button onClick={() => handleEdit(member)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(member.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -206,21 +206,21 @@ export default function Staff() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md my-8">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Staff' : 'Add New Staff'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8 transform transition-all">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 font-display">{editingId ? 'Edit Staff' : 'Add New Staff'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="p-6 space-y-5">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Store <span className="text-red-500">*</span></label>
+                <label className="label-text">Store <span className="text-red-500">*</span></label>
                 <select 
                   required disabled={user?.role === 'store'}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border disabled:bg-gray-100"
+                  className="input-field"
                   value={formData.storeId} onChange={e => setFormData({...formData, storeId: e.target.value})}
                 >
                   <option value="">Choose Store...</option>
@@ -231,32 +231,32 @@ export default function Staff() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <label className="label-text">Name <span className="text-red-500">*</span></label>
+                <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
-                <input type="text" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                <label className="label-text">Phone</label>
+                <input type="text" className="input-field" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Iqama Number</label>
-                <input type="text" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.iqamaNumber} onChange={e => setFormData({...formData, iqamaNumber: e.target.value})} />
+                <label className="label-text">Iqama Number</label>
+                <input type="text" className="input-field" value={formData.iqamaNumber} onChange={e => setFormData({...formData, iqamaNumber: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Iqama Expiry</label>
-                <input type="date" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.iqamaExpiry} onChange={e => setFormData({...formData, iqamaExpiry: e.target.value})} />
+                <label className="label-text">Iqama Expiry</label>
+                <input type="date" className="input-field" value={formData.iqamaExpiry} onChange={e => setFormData({...formData, iqamaExpiry: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Baladia Expiry</label>
-                <input type="date" className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.baladiaExpiry} onChange={e => setFormData({...formData, baladiaExpiry: e.target.value})} />
+                <label className="label-text">Baladia Expiry</label>
+                <input type="date" className="input-field" value={formData.baladiaExpiry} onChange={e => setFormData({...formData, baladiaExpiry: e.target.value})} />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  Close
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">
+                  Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                  {editingId ? 'Update Staff' : 'Add Staff'}
+                <button type="submit" className="btn-primary">
+                  {editingId ? 'Update Staff' : 'Save Staff'}
                 </button>
               </div>
             </form>

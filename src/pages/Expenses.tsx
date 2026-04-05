@@ -111,18 +111,18 @@ export default function Expenses() {
 
   const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
-  if (loading) return <div className="p-4">Loading expenses...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading expenses...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Expenses Reports</h1>
+          <h1 className="text-2xl font-bold text-slate-900 font-display">Expenses Reports</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {user?.role === 'admin' && (
             <select 
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+              className="input-field py-1.5 w-auto"
               value={filterStore}
               onChange={(e) => setFilterStore(e.target.value)}
             >
@@ -131,7 +131,7 @@ export default function Expenses() {
             </select>
           )}
           <select 
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+            className="input-field py-1.5 w-auto"
             value={filterMonth}
             onChange={(e) => setFilterMonth(e.target.value)}
           >
@@ -141,7 +141,7 @@ export default function Expenses() {
             <option value="10">10</option><option value="11">11</option><option value="12">12</option>
           </select>
           <select 
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-1.5 px-3 border"
+            className="input-field py-1.5 w-auto"
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
           >
@@ -157,51 +157,51 @@ export default function Expenses() {
               setEditingId(null);
               setIsModalOpen(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium flex items-center"
+            className="btn-primary"
           >
             <PlusCircle className="w-4 h-4 mr-2" /> Add Expense
           </button>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center max-w-sm">
-        <div className="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+      <div className="card p-5 flex items-center max-w-sm transition-all hover:shadow-md">
+        <div className="p-3 rounded-xl bg-red-50 text-red-600 mr-4">
           <TrendingUp className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-          <p className="text-xl font-bold text-gray-900">{totalAmount.toFixed(2)} SAR</p>
+          <p className="text-sm font-medium text-slate-500">Total Expenses</p>
+          <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAmount.toFixed(2)} SAR</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="card">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="table-header">Store</th>
+                <th className="table-header">Date</th>
+                <th className="table-header">Supplier</th>
+                <th className="table-header text-right">Amount</th>
+                <th className="table-header">Notes</th>
+                <th className="table-header text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {filteredExpenses.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">No expenses found.</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">No expenses found for the selected period.</td></tr>
               ) : (
                 filteredExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{expense.storeId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{expense.date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{expense.supplier}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">{expense.amount?.toFixed(2) || '0.00'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{expense.notes}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <div className="flex justify-center gap-2">
-                        <button onClick={() => handleEdit(expense)} className="text-blue-600 hover:text-blue-900"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(expense.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4" /></button>
+                  <tr key={expense.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="table-cell font-medium">{expense.storeId}</td>
+                    <td className="table-cell text-slate-500">{expense.date}</td>
+                    <td className="table-cell">{expense.supplier}</td>
+                    <td className="table-cell text-right font-medium text-slate-900">{expense.amount?.toFixed(2) || '0.00'}</td>
+                    <td className="table-cell text-slate-600">{expense.notes}</td>
+                    <td className="table-cell text-center">
+                      <div className="flex justify-center gap-3">
+                        <button onClick={() => handleEdit(expense)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(expense.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -213,21 +213,21 @@ export default function Expenses() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md my-8">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Expense' : 'Add New Expense'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8 transform transition-all">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 font-display">{editingId ? 'Edit Expense' : 'Add New Expense'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="p-6 space-y-5">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Store <span className="text-red-500">*</span></label>
+                <label className="label-text">Store <span className="text-red-500">*</span></label>
                 <select 
                   required disabled={user?.role === 'store'}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border disabled:bg-gray-100"
+                  className="input-field"
                   value={formData.storeId} onChange={e => setFormData({...formData, storeId: e.target.value})}
                 >
                   <option value="">Choose Store...</option>
@@ -238,14 +238,14 @@ export default function Expenses() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
-                <input type="date" required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                <label className="label-text">Date <span className="text-red-500">*</span></label>
+                <input type="date" required className="input-field" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Supplier <span className="text-red-500">*</span></label>
+                <label className="label-text">Supplier <span className="text-red-500">*</span></label>
                 <select 
                   required
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border"
+                  className="input-field"
                   value={formData.supplier} onChange={e => setFormData({...formData, supplier: e.target.value})}
                 >
                   <option value="">Choose Supplier...</option>
@@ -254,20 +254,20 @@ export default function Expenses() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Amount <span className="text-red-500">*</span></label>
-                <input type="number" step="0.01" required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
+                <label className="label-text">Amount <span className="text-red-500">*</span></label>
+                <input type="number" step="0.01" required className="input-field" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
-                <textarea className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm py-2 px-3 border" rows={3} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
+                <label className="label-text">Notes</label>
+                <textarea className="input-field" rows={3} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} placeholder="Optional notes..."></textarea>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  Close
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">
+                  Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                  {editingId ? 'Update Expense' : 'Add Expense'}
+                <button type="submit" className="btn-primary">
+                  {editingId ? 'Update Expense' : 'Save Expense'}
                 </button>
               </div>
             </form>

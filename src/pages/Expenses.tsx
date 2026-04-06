@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusCircle, Edit, Trash2, X, TrendingUp, Download } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, X, TrendingUp, Download, FileSpreadsheet } from 'lucide-react';
+import { format } from 'date-fns';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Expenses() {
   const { user } = useAuth();
@@ -14,8 +16,8 @@ export default function Expenses() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [filterStore, setFilterStore] = useState('All');
-  const [filterMonth, setFilterMonth] = useState('04');
-  const [filterYear, setFilterYear] = useState('2026');
+  const [filterMonth, setFilterMonth] = useState(format(new Date(), 'MM'));
+  const [filterYear, setFilterYear] = useState(format(new Date(), 'yyyy'));
 
   const initialFormState = {
     storeId: '', date: '', supplier: '', amount: '', notes: ''
@@ -109,6 +111,21 @@ export default function Expenses() {
     return true;
   });
 
+  const handleExportPDF = () => {
+    const columns = ['Store', 'Date', 'Supplier', 'Amount', 'Notes'];
+    const data = filteredExpenses.map(e => [
+      e.storeId, e.date, e.supplier, e.amount?.toFixed(2) || '0.00', e.notes || ''
+    ]);
+    exportToPDF(`Expenses Report - ${filterMonth}-${filterYear}`, columns, data);
+  };
+
+  const handleExportExcel = () => {
+    const data = filteredExpenses.map(e => ({
+      Store: e.storeId, Date: e.date, Supplier: e.supplier, Amount: e.amount, Notes: e.notes
+    }));
+    exportToExcel(`Expenses Report - ${filterMonth}-${filterYear}`, data);
+  };
+
   const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading expenses...</div>;
@@ -148,6 +165,16 @@ export default function Expenses() {
             <option value="2025">2025</option>
             <option value="2026">2026</option>
           </select>
+          
+          <div className="flex gap-2 border-l border-slate-200 pl-3 ml-1">
+            <button onClick={handleExportPDF} className="btn-secondary py-1.5 px-3" title="Export PDF">
+              <Download className="w-4 h-4 text-red-500" />
+            </button>
+            <button onClick={handleExportExcel} className="btn-secondary py-1.5 px-3" title="Export Excel">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            </button>
+          </div>
+
           <button 
             onClick={() => {
               setFormData(initialFormState);

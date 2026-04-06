@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Store, Lock, User, ArrowRight } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stores, setStores] = useState<string[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'stores'));
+        const storeNames = snapshot.docs.map(doc => doc.data().name).filter(Boolean);
+        setStores(storeNames);
+      } catch (err) {
+        console.error("Failed to load stores:", err);
+      }
+    };
+    fetchStores();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username) {
+      setError('Please select a Store or Admin');
+      return;
+    }
     setError('');
     setLoading(true);
     
@@ -65,16 +93,20 @@ export default function Login() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-slate-400" />
                 </div>
-                <input
+                <select
                   id="username"
                   name="username"
-                  type="text"
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="input-field pl-10"
-                  placeholder="Enter store name"
-                />
+                  className="input-field pl-10 appearance-none"
+                >
+                  <option value="" disabled>Select Store or Admin...</option>
+                  <option value="admin">Admin</option>
+                  {stores.map((store, idx) => (
+                    <option key={idx} value={store}>{store}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -114,6 +146,15 @@ export default function Login() {
               </button>
             </div>
           </form>
+        </div>
+        
+        <div className="mt-8 text-center space-y-2">
+          <p className="text-sm text-slate-500 font-medium">
+            Developer Waleed Al-Qadasi -0503189758 &copy; 2026 BudgetSystem. All rights reserved.
+          </p>
+          <p className="text-sm font-medium text-slate-600">
+            {currentTime.toLocaleDateString()} -- {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+          </p>
         </div>
       </div>
     </div>

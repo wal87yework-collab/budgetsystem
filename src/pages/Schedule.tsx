@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { CalendarDays, Save } from 'lucide-react';
+import { CalendarDays, Save, Download, FileSpreadsheet } from 'lucide-react';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Schedule() {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ export default function Schedule() {
   
   // schedules state: { staffId: { day: { status: 'AM', hours: '2.5' } } }
   const [schedules, setSchedules] = useState<Record<string, Record<string, { status: string, hours?: string }>>>({});
+  const [prevSchedules, setPrevSchedules] = useState<Record<string, Record<string, { status: string, hours?: string }>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -52,17 +54,23 @@ export default function Schedule() {
   }, [user, filterStore]);
 
   useEffect(() => {
-    // Fetch Schedules for the selected month/year
+    // Fetch Schedules for the selected month/year and previous month
     const fetchSchedules = async () => {
       setLoading(true);
       const newSchedules: Record<string, Record<string, { status: string, hours?: string }>> = {};
+      const newPrevSchedules: Record<string, Record<string, { status: string, hours?: string }>> = {};
       
-      // We will fetch the schedule document for the selected month/year
-      // Document ID format: `schedule_${filterStore}_${year}_${month}`
-      // If admin and 'All' stores, we might need a different approach, but let's assume schedule is per store.
-      // For simplicity, we can store each staff's schedule in a document: `schedule_${staffId}_${year}_${month}`
-      
+      let prevMonthNum = parseInt(month) - 1;
+      let prevYearNum = parseInt(year);
+      if (prevMonthNum === 0) {
+        prevMonthNum = 12;
+        prevYearNum -= 1;
+      }
+      const prevMonthStr = prevMonthNum.toString().padStart(2, '0');
+      const prevYearStr = prevYearNum.toString();
+
       for (const staff of staffList) {
+        // Current month
         const docId = `schedule_${staff.id}_${year}_${month}`;
         const docSnap = await getDoc(doc(db, 'schedules', docId));
         if (docSnap.exists()) {
@@ -70,9 +78,19 @@ export default function Schedule() {
         } else {
           newSchedules[staff.id] = {};
         }
+
+        // Previous month
+        const prevDocId = `schedule_${staff.id}_${prevYearStr}_${prevMonthStr}`;
+        const prevDocSnap = await getDoc(doc(db, 'schedules', prevDocId));
+        if (prevDocSnap.exists()) {
+          newPrevSchedules[staff.id] = prevDocSnap.data().days || {};
+        } else {
+          newPrevSchedules[staff.id] = {};
+        }
       }
       
       setSchedules(newSchedules);
+      setPrevSchedules(newPrevSchedules);
       setLoading(false);
     };
 
@@ -80,6 +98,7 @@ export default function Schedule() {
       fetchSchedules();
     } else {
       setSchedules({});
+      setPrevSchedules({});
       setLoading(false);
     }
   }, [staffList, month, year]);
@@ -130,14 +149,148 @@ export default function Schedule() {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   const calculateTotalOvertime = (staffId: string) => {
-    const staffSchedule = schedules[staffId] || {};
+    const currentSchedule = schedules[staffId] || {};
+    const prevSchedule = prevSchedules[staffId] || {};
     let total = 0;
-    Object.values(staffSchedule).forEach((day: any) => {
-      if (day.status === 'OverTime' && day.hours) {
+    
+    // Previous month: 25th to end of month
+    Object.entries(prevSchedule).forEach(([dayStr, day]: [string, any]) => {
+      const dayNum = parseInt(dayStr);
+      if (dayNum >= 25 && day.status === 'OverTime' && day.hours) {
         total += parseFloat(day.hours) || 0;
       }
     });
+
+    // Current month: 1st to 25th
+    Object.entries(currentSchedule).forEach(([dayStr, day]: [string, any]) => {
+      const dayNum = parseInt(dayStr);
+      if (dayNum <= 25 && day.status === 'OverTime' && day.hours) {
+        total += parseFloat(day.hours) || 0;
+      }
+    });
+
     return total;
+  };
+
+  const getReportDateRange = () => {
+    let prevMonthNum = parseInt(month) - 1;
+    let prevYearNum = parseInt(year);
+    if (prevMonthNum === 0) {
+      prevMonthNum = 12;
+      prevYearNum -= 1;
+    }
+    const prevMonthStr = prevMonthNum.toString().padStart(2, '0');
+    return {
+      start: `25/${prevMonthStr}/${prevYearNum}`,
+      end: `25/${month}/${year}`
+    };
+  };
+
+  const handleExportPDF = () => {
+    const { start, end } = getReportDateRange();
+    const columns = ['Staff Name', 'Store', 'Total Overtime (Hours)'];
+    const data = staffList.map(s => {
+      const ot = calculateTotalOvertime(s.id);
+      return [s.name, s.storeId, ot > 0 ? ot.toFixed(1) : '0'];
+    });
+    exportToPDF(`Overtime Summary ${start} To ${end}`, columns, data);
+  };
+
+  const handleExportExcel = () => {
+    const { start, end } = getReportDateRange();
+    const data = staffList.map(s => {
+      const ot = calculateTotalOvertime(s.id);
+      return {
+        'Staff Name': s.name,
+        'Store': s.storeId,
+        'Total Overtime (Hours)': ot > 0 ? ot.toFixed(1) : '0'
+      };
+    });
+    exportToExcel(`Overtime Summary ${start} To ${end}`, data);
+  };
+
+  const handleExportSchedulePDF = () => {
+    const { start, end } = getReportDateRange();
+    
+    let prevMonthNum = parseInt(month) - 1;
+    let prevYearNum = parseInt(year);
+    if (prevMonthNum === 0) {
+      prevMonthNum = 12;
+      prevYearNum -= 1;
+    }
+    const daysInPrevMonth = new Date(prevYearNum, prevMonthNum, 0).getDate();
+    
+    const exportColumns = ['Staff Name', 'Store'];
+    const exportDays: { day: number, isPrev: boolean }[] = [];
+    
+    for (let d = 25; d <= daysInPrevMonth; d++) {
+      exportColumns.push(`${d}/${prevMonthNum}`);
+      exportDays.push({ day: d, isPrev: true });
+    }
+    for (let d = 1; d <= 25; d++) {
+      exportColumns.push(`${d}/${parseInt(month)}`);
+      exportDays.push({ day: d, isPrev: false });
+    }
+
+    const data = staffList.map(s => {
+      const row = [s.name, s.storeId];
+      const currentSchedule = schedules[s.id] || {};
+      const prevSchedule = prevSchedules[s.id] || {};
+      
+      exportDays.forEach(({ day, isPrev }) => {
+        const cellData = isPrev ? prevSchedule[day.toString()] : currentSchedule[day.toString()];
+        let cellText = cellData?.status || '-';
+        if (cellData?.status === 'OverTime' && cellData?.hours) {
+          cellText += ` (${cellData.hours}h)`;
+        }
+        row.push(cellText);
+      });
+      return row;
+    });
+
+    exportToPDF(`Staff Schedule ${start} To ${end}`, exportColumns, data, 'landscape');
+  };
+
+  const handleExportScheduleExcel = () => {
+    const { start, end } = getReportDateRange();
+    
+    let prevMonthNum = parseInt(month) - 1;
+    let prevYearNum = parseInt(year);
+    if (prevMonthNum === 0) {
+      prevMonthNum = 12;
+      prevYearNum -= 1;
+    }
+    const daysInPrevMonth = new Date(prevYearNum, prevMonthNum, 0).getDate();
+    
+    const exportDays: { day: number, isPrev: boolean, label: string }[] = [];
+    
+    for (let d = 25; d <= daysInPrevMonth; d++) {
+      exportDays.push({ day: d, isPrev: true, label: `${d}/${prevMonthNum}` });
+    }
+    for (let d = 1; d <= 25; d++) {
+      exportDays.push({ day: d, isPrev: false, label: `${d}/${parseInt(month)}` });
+    }
+
+    const data = staffList.map(s => {
+      const row: any = {
+        'Staff Name': s.name,
+        'Store': s.storeId
+      };
+      const currentSchedule = schedules[s.id] || {};
+      const prevSchedule = prevSchedules[s.id] || {};
+      
+      exportDays.forEach(({ day, isPrev, label }) => {
+        const cellData = isPrev ? prevSchedule[day.toString()] : currentSchedule[day.toString()];
+        let cellText = cellData?.status || '-';
+        if (cellData?.status === 'OverTime' && cellData?.hours) {
+          cellText += ` (${cellData.hours}h)`;
+        }
+        row[label] = cellText;
+      });
+      return row;
+    });
+
+    exportToExcel(`Staff Schedule ${start} To ${end}`, data);
   };
 
   return (
@@ -189,6 +342,14 @@ export default function Schedule() {
       <div className="card">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h3 className="text-sm font-medium text-slate-700">Monthly Schedule ({month}/{year})</h3>
+          <div className="flex gap-2">
+            <button onClick={handleExportSchedulePDF} className="btn-secondary py-1 px-2 text-xs" title="Export PDF">
+              <Download className="w-3 h-3 text-red-500 mr-1" /> PDF
+            </button>
+            <button onClick={handleExportScheduleExcel} className="btn-secondary py-1 px-2 text-xs" title="Export Excel">
+              <FileSpreadsheet className="w-3 h-3 text-emerald-500 mr-1" /> Excel
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
@@ -270,7 +431,17 @@ export default function Schedule() {
       {!loading && staffList.length > 0 && (
         <div className="card">
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 className="text-sm font-medium text-slate-700">Overtime Summary ({month}/{year})</h3>
+            <h3 className="text-sm font-medium text-slate-700">
+              Overtime Summary ({getReportDateRange().start} To {getReportDateRange().end})
+            </h3>
+            <div className="flex gap-2">
+              <button onClick={handleExportPDF} className="btn-secondary py-1 px-2 text-xs" title="Export PDF">
+                <Download className="w-3 h-3 text-red-500 mr-1" /> PDF
+              </button>
+              <button onClick={handleExportExcel} className="btn-secondary py-1 px-2 text-xs" title="Export Excel">
+                <FileSpreadsheet className="w-3 h-3 text-emerald-500 mr-1" /> Excel
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">

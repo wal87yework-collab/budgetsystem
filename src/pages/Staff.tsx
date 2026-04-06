@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusCircle, Edit, Trash2, X, Users } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, X, Users, Download, FileSpreadsheet } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Staff() {
   const { user } = useAuth();
@@ -111,6 +112,25 @@ export default function Staff() {
     return true;
   });
 
+  const handleExportPDF = () => {
+    const columns = ['Store', 'Name', 'Phone', 'Iqama No.', 'Iqama Expiry', 'Baladia Expiry'];
+    const data = filteredStaff.map(s => [
+      s.storeId, s.name, s.phone, s.iqamaNumber, 
+      `${s.iqamaExpiry || ''} (${s.iqamaRem || ''})`, 
+      `${s.baladiaExpiry || ''} (${s.baladiaRem || ''})`
+    ]);
+    exportToPDF(`Staff Report`, columns, data);
+  };
+
+  const handleExportExcel = () => {
+    const data = filteredStaff.map(s => ({
+      Store: s.storeId, Name: s.name, Phone: s.phone, 'Iqama No.': s.iqamaNumber, 
+      'Iqama Expiry': s.iqamaExpiry, 'Iqama Rem': s.iqamaRem,
+      'Baladia Expiry': s.baladiaExpiry, 'Baladia Rem': s.baladiaRem
+    }));
+    exportToExcel(`Staff Report`, data);
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading staff...</div>;
 
   return (
@@ -130,6 +150,16 @@ export default function Staff() {
               {stores.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           )}
+          
+          <div className="flex gap-2 border-l border-slate-200 pl-3 ml-1">
+            <button onClick={handleExportPDF} className="btn-secondary py-1.5 px-3" title="Export PDF">
+              <Download className="w-4 h-4 text-red-500" />
+            </button>
+            <button onClick={handleExportExcel} className="btn-secondary py-1.5 px-3" title="Export Excel">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            </button>
+          </div>
+
           <button 
             onClick={() => {
               setFormData(initialFormState);

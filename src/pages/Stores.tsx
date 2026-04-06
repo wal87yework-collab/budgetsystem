@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Store, PlusCircle, Edit, Trash2, X } from 'lucide-react';
+import { Store, PlusCircle, Edit, Trash2, X, Download, FileSpreadsheet } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Stores() {
   const { user } = useAuth();
   const [stores, setStores] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -29,7 +31,14 @@ export default function Stores() {
       setLoading(false);
     });
 
-    return () => unsubStores();
+    const unsubCompanies = onSnapshot(collection(db, 'companies'), (snapshot) => {
+      setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+      unsubStores();
+      unsubCompanies();
+    };
   }, [user]);
 
   const calculateRem = (dateStr: string) => {
@@ -45,6 +54,16 @@ export default function Stores() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent duplicate store names
+    if (!editingId) {
+      const isDuplicate = stores.some(s => s.name.toLowerCase() === formData.name.trim().toLowerCase());
+      if (isDuplicate) {
+        alert('A store with this name already exists.');
+        return;
+      }
+    }
+
     const storeData = {
       ...formData,
       licenseRem: calculateRem(formData.licenseExpiry),
@@ -91,6 +110,27 @@ export default function Stores() {
     }
   };
 
+  const handleExportPDF = () => {
+    const columns = ['Store Name', 'Store Number', 'Company', 'License Expiry', 'Water Filter Expiry', 'Fire Ext Expiry'];
+    const data = stores.map(s => [
+      s.name, s.number, s.company, 
+      `${s.licenseExpiry || ''} (${s.licenseRem || ''})`, 
+      `${s.waterFilterExpiry || ''} (${s.waterFilterRem || ''})`,
+      `${s.fireExtExpiry || ''} (${s.fireExtRem || ''})`
+    ]);
+    exportToPDF(`Stores Report`, columns, data);
+  };
+
+  const handleExportExcel = () => {
+    const data = stores.map(s => ({
+      'Store Name': s.name, 'Store Number': s.number, Company: s.company, 
+      'License Expiry': s.licenseExpiry, 'License Rem': s.licenseRem,
+      'Water Filter Expiry': s.waterFilterExpiry, 'Water Filter Rem': s.waterFilterRem,
+      'Fire Ext Expiry': s.fireExtExpiry, 'Fire Ext Rem': s.fireExtRem
+    }));
+    exportToExcel(`Stores Report`, data);
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading stores...</div>;
 
   return (
@@ -99,18 +139,28 @@ export default function Stores() {
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-slate-900 font-display">Stores Management</h1>
         </div>
-        {user?.role === 'admin' && (
-          <button 
-            onClick={() => {
-              setFormData(initialFormState);
-              setEditingId(null);
-              setIsModalOpen(true);
-            }}
-            className="btn-primary"
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> Add New Store
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2 border-slate-200 pr-3 mr-1">
+            <button onClick={handleExportPDF} className="btn-secondary py-1.5 px-3" title="Export PDF">
+              <Download className="w-4 h-4 text-red-500" />
+            </button>
+            <button onClick={handleExportExcel} className="btn-secondary py-1.5 px-3" title="Export Excel">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            </button>
+          </div>
+          {user?.role === 'admin' && (
+            <button 
+              onClick={() => {
+                setFormData(initialFormState);
+                setEditingId(null);
+                setIsModalOpen(true);
+              }}
+              className="btn-primary"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" /> Add New Store
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
@@ -204,7 +254,16 @@ export default function Stores() {
               </div>
               <div>
                 <label className="label-text">Company</label>
-                <input type="text" className="input-field" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} />
+                <select 
+                  className="input-field" 
+                  value={formData.company} 
+                  onChange={e => setFormData({...formData, company: e.target.value})}
+                >
+                  <option value="">Select Company...</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.name || 'Unnamed Company'}>{c.name || 'Unnamed Company'}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="label-text">License Expiry</label>

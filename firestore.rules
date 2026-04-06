@@ -18,7 +18,8 @@ service cloud.firestore {
     }
 
     match /stores/{storeId} {
-      allow read, write: if isAuthenticated();
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     match /sales/{saleId} {
@@ -38,6 +39,10 @@ service cloud.firestore {
     }
 
     match /suppliers/{supplierId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /companies/{companyId} {
       allow read, write: if isAuthenticated();
     }
   }

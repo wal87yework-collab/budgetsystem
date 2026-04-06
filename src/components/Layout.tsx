@@ -142,10 +142,19 @@ export default function Layout() {
         </header>
 
         {/* Main Scrollable Content */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 relative overflow-y-auto focus:outline-none flex flex-col">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
             <Outlet />
           </div>
+          
+          {/* Global Footer */}
+          <footer className="w-full py-4 px-6 border-t border-slate-200 bg-white mt-auto">
+            <div className="max-w-7xl mx-auto text-center">
+              <p className="text-sm text-slate-500 font-medium">
+                Developer Waleed Al-Qadasi -0503189758 &copy; 2026 BudgetSystem. All rights reserved.
+              </p>
+            </div>
+          </footer>
         </main>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange } from 'lucide-react';
@@ -8,6 +8,41 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+const PrevYearInput = ({ 
+  initialValue, 
+  onSave 
+}: { 
+  initialValue: number; 
+  onSave: (val: string) => void; 
+}) => {
+  const [val, setVal] = useState(initialValue ? initialValue.toString() : '');
+
+  useEffect(() => {
+    setVal(initialValue ? initialValue.toString() : '');
+  }, [initialValue]);
+
+  return (
+    <input 
+      type="number"
+      className="w-full h-full text-right p-2 border-none focus:ring-1 focus:ring-inset focus:ring-indigo-500 hover:bg-slate-50 bg-transparent transition-colors"
+      value={val}
+      placeholder="0.00"
+      onChange={(e) => setVal(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.currentTarget.blur(); // Triggers onBlur to save
+        }
+      }}
+      onBlur={(e) => {
+        const numVal = parseFloat(e.target.value) || 0;
+        if (numVal !== initialValue) {
+          onSave(e.target.value);
+        }
+      }}
+    />
+  );
+};
 
 export default function Sales() {
   const { user } = useAuth();
@@ -26,6 +61,7 @@ export default function Sales() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportStartDate, setReportStartDate] = useState('');
   const [reportEndDate, setReportEndDate] = useState('');
+  const [reportError, setReportError] = useState('');
 
   const initialFormState = {
     storeId: '', date: '', netSales: '', mastercard: '', span: '', visa: '',
@@ -66,6 +102,23 @@ export default function Sales() {
       unsubSales();
     };
   }, [user]);
+
+  const [prevYearData, setPrevYearData] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const prevYear = parseInt(filterYear) - 1;
+    const docId = `${filterStore === 'All' ? 'All' : filterStore}_${prevYear}`;
+    
+    const unsub = onSnapshot(doc(db, 'annual_targets', docId), (docSnap) => {
+      if (docSnap.exists()) {
+        setPrevYearData(docSnap.data() as Record<string, number>);
+      } else {
+        setPrevYearData({});
+      }
+    });
+
+    return () => unsub();
+  }, [filterStore, filterYear]);
 
   // Math Calculations
   const parseNum = (val: any) => parseFloat(val) || 0;
@@ -265,7 +318,7 @@ export default function Sales() {
     doc.text(`Store: ${sale.storeId || 'N/A'}`, 14, 24);
     doc.text(`Date: ${sale.date || 'N/A'}`, 14, 30);
 
-    const tableBody = [
+    const tableBody: any[] = [
       [{ content: 'SALES', colSpan: 2, styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } }],
       ['Net Sales', Number(sale.netSales || 0).toFixed(2)],
       ['Tax', Number(sale.tax || 0).toFixed(2)],
@@ -315,12 +368,13 @@ export default function Sales() {
   };
 
   const handleExportDateRangeReport = () => {
+    setReportError('');
     if (!reportStartDate || !reportEndDate) {
-      alert('Please select both start and end dates.');
+      setReportError('Please select both start and end dates.');
       return;
     }
     if (reportStartDate > reportEndDate) {
-      alert('Start date cannot be after end date.');
+      setReportError('Start date cannot be after end date.');
       return;
     }
     
@@ -330,28 +384,32 @@ export default function Sales() {
     });
     
     if (filtered.length === 0) {
-      alert('No sales found in this date range.');
+      setReportError('No sales found in this date range.');
       return;
     }
 
-    const reportColumns = [
-      'Date', 'Net Sales', '15% VAT', 'Total Sales', 
-      'Total Apps', 'Total ATM', 'Box (Final Cash)', 'Used', 
-      'Bank Receive'
-    ];
+    try {
+      const reportColumns = [
+        'Date', 'Net Sales', '15% VAT', 'Total Sales', 
+        'Total Apps', 'Total ATM', 'Box (Final Cash)', 'Used', 
+        'Bank Receive'
+      ];
 
-    const reportData = filtered.map(s => [
-      s.date || '',
-      s.netSales?.toFixed(2) || '0.00',
-      s.tax?.toFixed(2) || '0.00',
-      s.totalAfterTax?.toFixed(2) || '0.00',
-      s.totalApps?.toFixed(2) || '0.00',
-      s.totalAtms?.toFixed(2) || '0.00',
-      s.finalCashSales?.toFixed(2) || '0.00',
-      s.used?.toFixed(2) || '0.00',
-      s.bankReceive?.toFixed(2) || '0.00'
-    ]);
+      const doc = new jsPDF({ orientation: 'landscape' });
+      
+      // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138); // brand-900
+    doc.text(`MONTHLY SALES REPORT`, 14, 16);
     
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(`Store: ${filterStore === 'All' ? 'All Stores' : filterStore}`, 14, 24);
+    doc.text(`Date Range: ${reportStartDate} to ${reportEndDate}`, 14, 30);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 36);
+
     // Calculate totals for the report
     const totalNet = filtered.reduce((sum, s) => sum + (s.netSales || 0), 0);
     const totalTax = filtered.reduce((sum, s) => sum + (s.tax || 0), 0);
@@ -361,35 +419,112 @@ export default function Sales() {
     const totalCash = filtered.reduce((sum, s) => sum + (s.finalCashSales || 0), 0);
     const totalUsed = filtered.reduce((sum, s) => sum + (s.used || 0), 0);
     const totalBankReceive = filtered.reduce((sum, s) => sum + (s.bankReceive || 0), 0);
-    
-    reportData.push(Array(9).fill('')); // Empty row
-    const totalsRow = [
-      'TOTALS',
-      totalNet.toFixed(2),
-      totalTax.toFixed(2),
-      totalAfterTax.toFixed(2),
-      totalApps.toFixed(2),
-      totalAtms.toFixed(2),
-      totalCash.toFixed(2),
-      totalUsed.toFixed(2),
-      totalBankReceive.toFixed(2)
-    ];
-    
-    reportData.push(totalsRow);
 
-    exportToPDF(`Monthly_Sales_Report_${reportStartDate}_to_${reportEndDate}`, reportColumns, reportData, 'landscape');
+    autoTable(doc, {
+      startY: 42,
+      head: [reportColumns],
+      body: filtered.map(s => [
+        s.date || '',
+        s.netSales?.toFixed(2) || '0.00',
+        s.tax?.toFixed(2) || '0.00',
+        s.totalAfterTax?.toFixed(2) || '0.00',
+        s.totalApps?.toFixed(2) || '0.00',
+        s.totalAtms?.toFixed(2) || '0.00',
+        s.finalCashSales?.toFixed(2) || '0.00',
+        s.used?.toFixed(2) || '0.00',
+        s.bankReceive?.toFixed(2) || '0.00'
+      ]),
+      foot: [[
+        'TOTALS',
+        totalNet.toFixed(2),
+        totalTax.toFixed(2),
+        totalAfterTax.toFixed(2),
+        totalApps.toFixed(2),
+        totalAtms.toFixed(2),
+        totalCash.toFixed(2),
+        totalUsed.toFixed(2),
+        totalBankReceive.toFixed(2)
+      ]],
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' },
+      footStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', halign: 'right' },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right', fontStyle: 'bold' },
+        4: { halign: 'right', textColor: [217, 119, 6], fontStyle: 'bold' }, // Amber
+        5: { halign: 'right', textColor: [5, 150, 105], fontStyle: 'bold' }, // Emerald
+        6: { halign: 'right', fontStyle: 'bold', textColor: [4, 120, 87] }, // Dark Emerald
+        7: { halign: 'right', textColor: [220, 38, 38] }, // Red
+        8: { halign: 'right' }
+      },
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 14, right: 14 }
+    });
+
+    doc.save(`Monthly_Sales_Report_${reportStartDate}_to_${reportEndDate}.pdf`);
     setIsReportModalOpen(false);
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      setReportError('Failed to generate PDF report: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const totalSalesAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalAfterTax || 0), 0);
+  const totalNetSalesAmount = filteredSales.reduce((sum, sale) => sum + (sale.netSales || 0), 0);
   const totalAtmsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalAtms || 0), 0);
   const totalAppsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalApps || 0), 0);
+  const totalJahezAmount = filteredSales.reduce((sum, sale) => sum + (sale.jahez || 0), 0);
+  const totalHungerStationAmount = filteredSales.reduce((sum, sale) => sum + (sale.hungerStation || 0), 0);
   const totalCashAmount = filteredSales.reduce((sum, sale) => sum + (sale.finalCashSales || 0), 0);
 
   const chartData = filteredSales.slice(0, 10).reverse().map(sale => ({
     name: sale.date ? format(parseISO(sale.date), 'dd MMM') : 'Unknown',
     sales: sale.totalAfterTax || 0
   }));
+
+  const monthsList = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const currentYearSalesArray = Array(12).fill(0);
+  const currentQtrSales = Array(4).fill(0);
+  const prevQtrSales = Array(4).fill(0);
+
+  sales.forEach(s => {
+    if (s.date && typeof s.date === 'string') {
+      const parts = s.date.split('-');
+      if (parts.length >= 2) {
+        const y = parts[0];
+        const m = parts[1];
+        if (y === filterYear && (filterStore === 'All' || s.storeId === filterStore)) {
+          const monthIndex = parseInt(m) - 1;
+          currentYearSalesArray[monthIndex] += (s.totalAfterTax || 0);
+          currentQtrSales[Math.floor(monthIndex / 3)] += (s.totalAfterTax || 0);
+        }
+      }
+    }
+  });
+
+  for (let i = 0; i < 12; i++) {
+    const val = prevYearData[(i + 1).toString().padStart(2, '0')] || 0;
+    prevQtrSales[Math.floor(i / 3)] += val;
+  }
+
+  const handlePrevYearChange = async (monthIndex: number, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    const prevYear = parseInt(filterYear) - 1;
+    const docId = `${filterStore === 'All' ? 'All' : filterStore}_${prevYear}`;
+    const monthStr = (monthIndex + 1).toString().padStart(2, '0');
+    
+    try {
+      await setDoc(doc(db, 'annual_targets', docId), {
+        [monthStr]: numValue
+      }, { merge: true });
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update previous year data.');
+    }
+  };
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading sales data...</div>;
 
@@ -456,7 +591,7 @@ export default function Sales() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
           <div className="p-3 rounded-xl bg-blue-50 text-blue-600 mr-4">
             <DollarSign className="w-6 h-6" />
@@ -464,6 +599,15 @@ export default function Sales() {
           <div>
             <p className="text-sm font-medium text-slate-500">Total Sales</p>
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalSalesAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600 mr-4">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Net Sales</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalNetSalesAmount.toFixed(2)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -485,32 +629,154 @@ export default function Sales() {
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 mr-4">
+          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Jahez</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalJahezAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-yellow-50 text-yellow-600 mr-4">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Hunger Station</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalHungerStationAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all bg-gradient-to-br from-red-500 to-orange-500 shadow-md shadow-red-500/20 border-0 hover:-translate-y-0.5">
+          <div className="p-3 rounded-xl bg-white/20 text-white mr-4 backdrop-blur-sm shadow-inner">
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Final Cash</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalCashAmount.toFixed(2)} SAR</p>
+            <p className="text-sm font-medium text-orange-100">Final Cash</p>
+            <p className="text-xl font-bold text-white font-display mt-0.5">{totalCashAmount.toFixed(2)} SAR</p>
           </div>
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-slate-800 font-display mb-6">Sales Trend (Last 10 Records)</h3>
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} dx={-10} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#0F172A', border: 'none', borderRadius: '0.75rem', color: '#F8FAFC', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                itemStyle={{ color: '#F8FAFC' }}
-              />
-              <Line type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* Yearly Comparison */}
+      <div className="card p-6 overflow-x-auto">
+        <div className="flex justify-between items-center mb-6 min-w-[800px]">
+          <h3 className="text-lg font-semibold text-slate-800 font-display">Year-over-Year Comparison</h3>
+          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Click cells in {parseInt(filterYear) - 1} row to input target/past sales</span>
+        </div>
+        
+        <div className="mb-8 min-w-[800px]">
+          <table className="w-full text-xs sm:text-sm text-right border-collapse border border-slate-200">
+            <thead>
+              <tr className="bg-slate-800 text-white">
+                <th className="border border-slate-700 p-2 text-center w-20">Yr. / Month</th>
+                {monthsList.map(m => (
+                  <th key={m} className="border border-slate-700 p-2 w-20 text-center">{m}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-slate-200 p-2 font-bold bg-slate-100 text-center">{filterYear}</td>
+                {currentYearSalesArray.map((val, i) => (
+                  <td key={i} className="border border-slate-200 p-2 font-medium">{val === 0 ? '' : val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                ))}
+              </tr>
+              <tr>
+                <td className="border border-slate-200 p-2 font-bold bg-slate-100 text-center">{parseInt(filterYear) - 1}</td>
+                {monthsList.map((_, i) => {
+                  const val = prevYearData[(i + 1).toString().padStart(2, '0')] || 0;
+                  return (
+                    <td key={i} className="border border-slate-200 p-0">
+                      <PrevYearInput 
+                        initialValue={val} 
+                        onSave={(newValue) => handlePrevYearChange(i, newValue)} 
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr className="bg-slate-50">
+                <td className="border border-slate-200 p-2 font-bold text-center">DIFF.</td>
+                {currentYearSalesArray.map((current, i) => {
+                  const prev = prevYearData[(i + 1).toString().padStart(2, '0')] || 0;
+                  const diff = prev === 0 && current === 0 ? 0 : current - prev;
+                  return (
+                    <td key={i} className={`border border-slate-200 p-2 font-medium ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                      {diff === 0 ? '0' : diff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr className="bg-slate-50">
+                <td className="border border-slate-200 p-2 font-bold text-center">% DIFF.</td>
+                {currentYearSalesArray.map((current, i) => {
+                  const prev = prevYearData[(i + 1).toString().padStart(2, '0')] || 0;
+                  const percent = prev > 0 ? ((current - prev) / prev) * 100 : (current > 0 ? 100 : 0);
+                  const displayStr = (prev === 0 && current === 0) ? 'N/A' : `${percent.toFixed(2)}%`;
+                  return (
+                    <td key={i} className={`border border-slate-200 p-2 font-medium ${percent > 0 && prev !== 0 ? 'text-emerald-600' : percent < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                      {displayStr}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="border border-slate-200 p-2 font-bold bg-slate-100 text-center">{filterYear} Avg/Day</td>
+                {currentYearSalesArray.map((val, i) => {
+                  const daysInMonth = new Date(parseInt(filterYear), i + 1, 0).getDate();
+                  const avg = val / daysInMonth;
+                  return (
+                    <td key={`avg-${i}`} className="border border-slate-200 p-2 font-medium text-slate-500 text-[11px] sm:text-xs">
+                      {val === 0 ? '' : avg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="border border-slate-200 p-2 font-bold bg-slate-100 text-center">{parseInt(filterYear) - 1} Avg/Day</td>
+                {monthsList.map((_, i) => {
+                  const val = prevYearData[(i + 1).toString().padStart(2, '0')] || 0;
+                  const daysInMonth = new Date(parseInt(filterYear) - 1, i + 1, 0).getDate();
+                  const avg = val / daysInMonth;
+                  return (
+                    <td key={`avg-prev-${i}`} className="border border-slate-200 p-2 font-medium text-slate-500 text-[11px] sm:text-xs">
+                      {val === 0 ? '' : avg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="min-w-[400px] w-full max-w-2xl">
+          <h4 className="text-md font-semibold text-slate-800 mb-3">Quarterly Comparison</h4>
+          <table className="w-full text-sm text-right border-collapse border border-slate-200">
+            <thead>
+              <tr className="bg-slate-800 text-white">
+                <th className="border border-slate-700 p-2 text-center w-32">Quarter</th>
+                <th className="border border-slate-700 p-2 text-center">{filterYear} Total</th>
+                <th className="border border-slate-700 p-2 text-center">{parseInt(filterYear) - 1} Total</th>
+                <th className="border border-slate-700 p-2 text-center">% Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4].map((qtr, i) => {
+                const current = currentQtrSales[i];
+                const prev = prevQtrSales[i];
+                const percent = prev > 0 ? ((current - prev) / prev) * 100 : (current > 0 ? 100 : 0);
+                const displayStr = (prev === 0 && current === 0) ? 'N/A' : `${percent.toFixed(2)}%`;
+                return (
+                  <tr key={qtr}>
+                    <td className="border border-slate-200 p-2 font-bold bg-slate-100 text-center">{qtr}{qtr === 1 ? 'st' : qtr === 2 ? 'nd' : qtr === 3 ? 'rd' : 'th'} QTR</td>
+                    <td className="border border-slate-200 p-2 font-medium bg-white">{current === 0 ? '0' : current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="border border-slate-200 p-2 font-medium bg-white">{prev === 0 ? '0' : prev.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className={`border border-slate-200 p-2 font-bold bg-slate-50 ${percent > 0 && prev !== 0 ? 'text-emerald-600' : percent < 0 ? 'text-red-600' : 'text-slate-600'}`}>{displayStr}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -759,6 +1025,13 @@ export default function Sales() {
             </div>
             <div className="space-y-5">
               <p className="text-sm text-slate-500">Select a date range to generate a comprehensive PDF report for the selected store(s).</p>
+              
+              {reportError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium border border-red-100">
+                  {reportError}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label-text">Start Date</label>

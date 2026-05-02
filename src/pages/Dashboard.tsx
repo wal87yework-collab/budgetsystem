@@ -104,7 +104,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 card p-6">
           <h3 className="text-lg font-semibold text-slate-800 font-display mb-4">Revenue Overview (Last 7 Days)</h3>
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} dy={10} />

@@ -45,5 +45,9 @@ service cloud.firestore {
     match /companies/{companyId} {
       allow read, write: if isAuthenticated();
     }
+
+    match /annual_targets/{targetId} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }

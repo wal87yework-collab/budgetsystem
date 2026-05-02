@@ -7,8 +7,9 @@ import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Schedule() {
   const { user } = useAuth();
-  const [month, setMonth] = useState('04');
-  const [year, setYear] = useState('2026');
+  const today = new Date();
+  const [month, setMonth] = useState((today.getMonth() + 1).toString().padStart(2, '0'));
+  const [year, setYear] = useState(today.getFullYear().toString());
   
   const [staffList, setStaffList] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);

@@ -17,7 +17,7 @@ export default function Staff() {
   const [filterStore, setFilterStore] = useState('All');
 
   const initialFormState = {
-    storeId: '', name: '', phone: '', email: '', iqamaNumber: '', iqamaExpiry: '', baladiaExpiry: ''
+    storeId: '', name: '', phone: '', email: '', iqamaNumber: '', iqamaExpiry: '', baladiaExpiry: '', sandwichArtist1Check: '', sandwichArtist2Check: ''
   };
   const [formData, setFormData] = useState(initialFormState);
 
@@ -91,7 +91,9 @@ export default function Staff() {
       email: member.email || '',
       iqamaNumber: member.iqamaNumber || '',
       iqamaExpiry: member.iqamaExpiry || '',
-      baladiaExpiry: member.baladiaExpiry || ''
+      baladiaExpiry: member.baladiaExpiry || '',
+      sandwichArtist1Check: member.sandwichArtist1Check || '',
+      sandwichArtist2Check: member.sandwichArtist2Check || ''
     });
     setEditingId(member.id);
     setIsModalOpen(true);
@@ -113,20 +115,24 @@ export default function Staff() {
   });
 
   const handleExportPDF = () => {
-    const columns = ['Store', 'Name', 'Phone', 'Iqama No.', 'Iqama Expiry', 'Baladia Expiry'];
+    const columns = ['Store', 'Name', 'Phone', 'Iqama No.', 'Iqama Expiry', 'Baladia Expiry', 'Sandwich Artist 1', 'Sandwich Artist 2'];
     const data = filteredStaff.map(s => [
       s.storeId, s.name, s.phone, s.iqamaNumber, 
       `${s.iqamaExpiry || ''} (${s.iqamaRem || ''})`, 
-      `${s.baladiaExpiry || ''} (${s.baladiaRem || ''})`
+      `${s.baladiaExpiry || ''} (${s.baladiaRem || ''})`,
+      s.sandwichArtist1Check || 'No',
+      s.sandwichArtist2Check || 'No'
     ]);
-    exportToPDF(`Staff Report`, columns, data);
+    exportToPDF(`Staff Report`, columns, data, 'landscape');
   };
 
   const handleExportExcel = () => {
     const data = filteredStaff.map(s => ({
       Store: s.storeId, Name: s.name, Phone: s.phone, 'Iqama No.': s.iqamaNumber, 
       'Iqama Expiry': s.iqamaExpiry, 'Iqama Rem': s.iqamaRem,
-      'Baladia Expiry': s.baladiaExpiry, 'Baladia Rem': s.baladiaRem
+      'Baladia Expiry': s.baladiaExpiry, 'Baladia Rem': s.baladiaRem,
+      'Sandwich Artist 1': s.sandwichArtist1Check === 'Yes' ? 'Yes' : 'No',
+      'Sandwich Artist 2': s.sandwichArtist2Check === 'Yes' ? 'Yes' : 'No'
     }));
     exportToExcel(`Staff Report`, data);
   };
@@ -187,12 +193,14 @@ export default function Staff() {
                 <th className="table-header">Iqama No.</th>
                 <th className="table-header">Iqama Expiry</th>
                 <th className="table-header">Baladia Expiry</th>
+                <th className="table-header">Sandwich Artist 1</th>
+                <th className="table-header">Sandwich Artist 2</th>
                 <th className="table-header text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {filteredStaff.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">No staff found.</td></tr>
+                <tr><td colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">No staff found.</td></tr>
               ) : (
                 filteredStaff.map((member) => (
                   <tr key={member.id} className="hover:bg-slate-50 transition-colors">
@@ -220,6 +228,16 @@ export default function Staff() {
                           {member.baladiaRem}
                         </span>
                       </div>
+                    </td>
+                    <td className="table-cell">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${member.sandwichArtist1Check === 'Yes' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'}`}>
+                        {member.sandwichArtist1Check === 'Yes' ? 'Completed' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="table-cell">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${member.sandwichArtist2Check === 'Yes' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'}`}>
+                        {member.sandwichArtist2Check === 'Yes' ? 'Completed' : 'Pending'}
+                      </span>
                     </td>
                     <td className="table-cell text-center">
                       <div className="flex justify-center gap-3">
@@ -279,6 +297,28 @@ export default function Staff() {
               <div>
                 <label className="label-text">Baladia Expiry</label>
                 <input type="date" className="input-field" value={formData.baladiaExpiry} onChange={e => setFormData({...formData, baladiaExpiry: e.target.value})} />
+              </div>
+              
+              <div className="flex gap-6 mt-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                    checked={formData.sandwichArtist1Check === 'Yes'}
+                    onChange={e => setFormData({...formData, sandwichArtist1Check: e.target.checked ? 'Yes' : 'No'})}
+                  />
+                  <span className="text-sm font-medium text-slate-700">Sandwich Artist 1 Complete</span>
+                </label>
+                
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                    checked={formData.sandwichArtist2Check === 'Yes'}
+                    onChange={e => setFormData({...formData, sandwichArtist2Check: e.target.checked ? 'Yes' : 'No'})}
+                  />
+                  <span className="text-sm font-medium text-slate-700">Sandwich Artist 2 Complete</span>
+                </label>
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">

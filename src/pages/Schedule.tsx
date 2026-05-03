@@ -194,7 +194,8 @@ export default function Schedule() {
       const ot = calculateTotalOvertime(s.id);
       return [s.name, s.storeId, ot > 0 ? ot.toFixed(1) : '0'];
     });
-    exportToPDF(`Overtime Summary ${start} To ${end}`, columns, data);
+    const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
+    exportToPDF(`Overtime Summary`, columns, data, 'portrait', `Store: ${storeNameText} | Date Range: ${start} to ${end}`);
   };
 
   const handleExportExcel = () => {
@@ -249,7 +250,8 @@ export default function Schedule() {
       return row;
     });
 
-    exportToPDF(`Staff Schedule ${start} To ${end}`, exportColumns, data, 'landscape');
+    const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
+    exportToPDF(`Staff Schedule`, exportColumns, data, 'landscape', `Store: ${storeNameText} | Date Range: ${start} to ${end}`);
   };
 
   const handleExportScheduleExcel = () => {

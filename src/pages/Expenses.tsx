@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusCircle, Edit, Trash2, X, TrendingUp, Download, FileSpreadsheet } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, X, TrendingUp, Download, FileSpreadsheet, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
@@ -126,7 +126,8 @@ export default function Expenses() {
     const data = filteredExpenses.map(e => [
       e.storeId, e.date, e.supplier, e.amount?.toFixed(2) || '0.00', e.notes || ''
     ]);
-    exportToPDF(`Expenses Report - ${filterMonth}-${filterYear}`, columns, data);
+    const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
+    exportToPDF(`Expenses Report - ${filterMonth}-${filterYear}`, columns, data, 'portrait', `Store: ${storeNameText}`);
   };
 
   const handleExportExcel = () => {
@@ -137,6 +138,12 @@ export default function Expenses() {
   };
 
   const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+
+  const supplierTotals = filteredExpenses.reduce((acc, exp) => {
+    const supplier = exp.supplier || 'Unknown';
+    acc[supplier] = (acc[supplier] || 0) + (exp.amount || 0);
+    return acc;
+  }, {} as Record<string, number>);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading expenses...</div>;
 
@@ -201,14 +208,28 @@ export default function Expenses() {
         </div>
       </div>
 
-      <div className="card p-5 flex items-center max-w-sm transition-all hover:shadow-md">
-        <div className="p-3 rounded-xl bg-red-50 text-red-600 mr-4">
-          <TrendingUp className="w-6 h-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-red-50 text-red-600 mr-4">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Total Expenses</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAmount.toFixed(2)} SAR</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium text-slate-500">Total Expenses</p>
-          <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAmount.toFixed(2)} SAR</p>
-        </div>
+        
+        {Object.entries(supplierTotals).map(([supplier, amount]) => (
+          <div key={supplier} className="card p-5 flex items-center transition-all hover:shadow-md">
+            <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600 mr-4">
+              <Receipt className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500 truncate max-w-[120px]" title={supplier}>{supplier}</p>
+              <p className="text-lg font-bold text-slate-900 font-display mt-0.5">{(amount as number).toFixed(2)} SAR</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="card">

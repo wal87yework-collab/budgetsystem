@@ -305,7 +305,8 @@ export default function Sales() {
 
   const handleExportPDF = () => {
     const data = filteredSales.map(mapSaleToRow);
-    exportToPDF(`Sales Report - ${filterMonth}-${filterYear}`, salesColumns, data, 'landscape');
+    const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
+    exportToPDF(`Sales Report - ${filterMonth}-${filterYear}`, salesColumns, data, 'landscape', `Store: ${storeNameText}`);
   };
 
   const handleExportExcel = () => {
@@ -416,7 +417,8 @@ export default function Sales() {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
-    doc.text(`Store: ${filterStore === 'All' ? 'All Stores' : filterStore}`, 14, 24);
+    const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
+    doc.text(`Store: ${storeNameText}`, 14, 24);
     doc.text(`Date Range: ${reportStartDate} to ${reportEndDate}`, 14, 30);
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 36);
 

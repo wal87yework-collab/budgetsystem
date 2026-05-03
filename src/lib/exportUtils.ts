@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-export const exportToPDF = (title: string, columns: string[], data: any[][], orientation: 'portrait' | 'landscape' = 'portrait') => {
+export const exportToPDF = (title: string, columns: string[], data: any[][], orientation: 'portrait' | 'landscape' = 'portrait', subtitle: string = '') => {
   const doc = new jsPDF({ orientation });
   
   doc.setFontSize(18);
@@ -10,12 +10,17 @@ export const exportToPDF = (title: string, columns: string[], data: any[][], ori
   
   doc.setFontSize(11);
   doc.setTextColor(100);
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+  let yPos = 30;
+  if (subtitle) {
+    doc.text(subtitle, 14, yPos);
+    yPos += 6;
+  }
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, yPos);
 
   autoTable(doc, {
     head: [columns],
     body: data,
-    startY: 35,
+    startY: yPos + 5,
     styles: { 
       fontSize: orientation === 'landscape' ? 7 : 9, 
       cellPadding: orientation === 'landscape' ? 1.5 : 3,

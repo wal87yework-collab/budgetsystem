@@ -32,7 +32,7 @@ export default function Layout() {
   const allNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'store'] },
     { name: 'Sales', path: '/sales', icon: TrendingUp, roles: ['admin', 'store'] },
-    { name: 'Expenses', path: '/expenses', icon: Receipt, roles: ['admin'] },
+    { name: 'Expenses', path: '/expenses', icon: Receipt, roles: ['admin', 'store'] },
     { name: 'Staff', path: '/staff', icon: Users, roles: ['admin', 'store'] },
     { name: 'Schedule', path: '/schedule', icon: CalendarDays, roles: ['admin', 'store'] },
     { name: 'Stores', path: '/stores', icon: Store, roles: ['admin'] },

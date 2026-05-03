@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { CalendarDays, Save, Download, FileSpreadsheet } from 'lucide-react';
+import { CalendarDays, Save, Download, FileSpreadsheet, CheckCircle2, X } from 'lucide-react';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Schedule() {
@@ -20,6 +20,15 @@ export default function Schedule() {
   const [prevSchedules, setPrevSchedules] = useState<Record<string, Record<string, { status: string, hours?: string }>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{title: string, type: 'success' | 'error'} | null>(null);
+  
+  const showToast = (title: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage({ title, type });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const dirtyStaffRef = React.useRef<Set<string>>(new Set());
+  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Fetch Stores
@@ -104,7 +113,58 @@ export default function Schedule() {
     }
   }, [staffList, month, year]);
 
+  const [dirty, setDirty] = useState(false);
+
+  const saveStaffSchedules = async (staffIdsToSave: string[], showSuccessAlert = false) => {
+    if (staffIdsToSave.length === 0 && !showSuccessAlert) return;
+    
+    setSaving(true);
+    try {
+      for (const staffId of staffIdsToSave) {
+        const staff = staffList.find(s => s.id === staffId);
+        if (!staff) continue;
+        const docId = `schedule_${staffId}_${year}_${month}`;
+        const staffSchedule = schedules[staffId] || {};
+        await setDoc(doc(db, 'schedules', docId), {
+          staffId: staff.id,
+          storeId: staff.storeId,
+          month,
+          year,
+          days: staffSchedule,
+          updatedAt: new Date().toISOString()
+        });
+      }
+      if (showSuccessAlert) {
+        showToast('Schedule saved successfully!', 'success');
+      }
+    } catch (error) {
+      console.error("Error saving schedule:", error);
+      if (showSuccessAlert) {
+        showToast('Failed to save schedule.', 'error');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (dirty) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        const dirtyIds = Array.from(dirtyStaffRef.current);
+        dirtyStaffRef.current.clear();
+        saveStaffSchedules(dirtyIds, false);
+        setDirty(false);
+      }, 1500);
+    }
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [schedules, dirty]);
+
   const handleCellChange = (staffId: string, day: number, field: 'status' | 'hours', value: string) => {
+    dirtyStaffRef.current.add(staffId);
+    setDirty(true);
     setSchedules(prev => {
       const staffSchedule = prev[staffId] || {};
       const dayData = staffSchedule[day.toString()] || { status: '-' };
@@ -123,27 +183,11 @@ export default function Schedule() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      for (const staff of staffList) {
-        const docId = `schedule_${staff.id}_${year}_${month}`;
-        const staffSchedule = schedules[staff.id] || {};
-        await setDoc(doc(db, 'schedules', docId), {
-          staffId: staff.id,
-          storeId: staff.storeId,
-          month,
-          year,
-          days: staffSchedule,
-          updatedAt: new Date().toISOString()
-        });
-      }
-      alert('Schedule saved successfully!');
-    } catch (error) {
-      console.error("Error saving schedule:", error);
-      alert('Failed to save schedule.');
-    } finally {
-      setSaving(false);
-    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    const allStaffIds = staffList.map(s => s.id);
+    dirtyStaffRef.current.clear();
+    setDirty(false);
+    await saveStaffSchedules(allStaffIds, true);
   };
 
   const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
@@ -475,6 +519,17 @@ export default function Schedule() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+      
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-3 rounded shadow-lg flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-4">
+          {toastMessage.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          ) : (
+            <X className="w-5 h-5 text-red-400" />
+          )}
+          <span className="font-medium text-sm">{toastMessage.title}</span>
         </div>
       )}
     </div>

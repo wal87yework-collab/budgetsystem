@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { 
   LayoutDashboard, 
   TrendingUp, 
@@ -16,13 +18,89 @@ import {
   X,
   Bell
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInDays, parseISO } from 'date-fns';
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let unsubStaff = () => {};
+    let unsubStores = () => {};
+
+    const checkExpirations = (staffData: any[], storeData: any[]) => {
+      const newNotifs: any[] = [];
+      const today = new Date();
+      
+      const checkExpiry = (dateStr: string, name: string, type: string, path: string) => {
+        if (!dateStr) return;
+        try {
+           const days = differenceInDays(parseISO(dateStr), today);
+           if (days <= 30) {
+             newNotifs.push({
+               id: `${name}-${type}`,
+               title: name,
+               message: `${type} ${days < 0 ? 'expired ' + Math.abs(days) + ' days ago' : 'expires in ' + days + ' days'}`,
+               isExpired: days < 0,
+               path
+             });
+           }
+        } catch(e) {}
+      }
+
+      staffData.forEach(member => {
+         if (user.role === 'admin' || member.storeId === user.username) {
+            checkExpiry(member.iqamaExpiry, `${member.name} (${member.storeId})`, 'Iqama', '/staff');
+            checkExpiry(member.baladiaExpiry, `${member.name} (${member.storeId})`, 'Baladia', '/staff');
+         }
+      });
+
+      storeData.forEach(store => {
+         if (user.role === 'admin' || store.name === user.username) {
+             checkExpiry(store.licenseExpiry, store.name, 'License', '/stores');
+             checkExpiry(store.waterFilterExpiry, store.name, 'Water Filter', '/stores');
+             checkExpiry(store.fireExtExpiry, store.name, 'Fire Extinguisher', '/stores');
+         }
+      });
+
+      setNotifications(newNotifs.sort((a, b) => (b.isExpired ? 1 : 0) - (a.isExpired ? 1 : 0)));
+    };
+
+    let staffCache: any[] = [];
+    let storeCache: any[] = [];
+
+    unsubStaff = onSnapshot(collection(db, 'staff'), (snapshot) => {
+      staffCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      checkExpirations(staffCache, storeCache);
+    });
+
+    unsubStores = onSnapshot(collection(db, 'stores'), (snapshot) => {
+      storeCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      checkExpirations(staffCache, storeCache);
+    });
+
+    return () => {
+      unsubStaff();
+      unsubStores();
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -35,7 +113,7 @@ export default function Layout() {
     { name: 'Expenses', path: '/expenses', icon: Receipt, roles: ['admin', 'store'] },
     { name: 'Staff', path: '/staff', icon: Users, roles: ['admin', 'store'] },
     { name: 'Schedule', path: '/schedule', icon: CalendarDays, roles: ['admin', 'store'] },
-    { name: 'Stores', path: '/stores', icon: Store, roles: ['admin'] },
+    { name: 'Stores', path: '/stores', icon: Store, roles: ['admin', 'store'] },
     { name: 'Inventory', path: '/inventory', icon: Package, roles: ['admin'] },
     { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin'] },
   ];
@@ -134,10 +212,55 @@ export default function Layout() {
             <div className="hidden sm:block text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
               {format(new Date(), 'EEEE, dd MMM yyyy')}
             </div>
-            <button className="p-2 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            <div className="relative" ref={notifRef}>
+              <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors relative focus:outline-none">
+                <Bell className="w-5 h-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden" animate-in="true" slide-in-from-top-2="true">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <h3 className="font-semibold text-slate-800">Alerts</h3>
+                    <span className="text-xs font-medium px-2 py-1 bg-red-100 text-red-600 rounded-full">
+                      {notifications.length} upcoming/expired
+                    </span>
+                  </div>
+                  
+                  <div className="max-h-[70vh] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-slate-500">
+                        <ShieldAlert className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p className="text-sm">No expiration alerts</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-50">
+                        {notifications.map(notif => (
+                          <button
+                            key={notif.id}
+                            onClick={() => {
+                              navigate(notif.path);
+                              setShowNotifications(false);
+                            }}
+                            className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex items-start gap-3 ${notif.isExpired ? 'bg-red-50/30' : ''}`}
+                          >
+                            <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${notif.isExpired ? 'bg-red-500' : 'bg-amber-400'}`} />
+                            <div>
+                              <p className="text-sm font-medium text-slate-800">{notif.title}</p>
+                              <p className={`text-xs mt-1 ${notif.isExpired ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
+                                {notif.message}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

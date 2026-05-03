@@ -85,9 +85,19 @@ export default function Sales() {
     });
 
     // Fetch Sales
-    const qSales = user?.role === 'store'
-      ? query(collection(db, 'sales'), where('storeId', '==', user.username))
-      : collection(db, 'sales');
+    const yearStart = `${filterYear}-01-01`;
+    const yearEnd = `${filterYear}-12-31`;
+    
+    let baseQuery = collection(db, 'sales');
+    if (user?.role === 'store') {
+      baseQuery = query(collection(db, 'sales'), where('storeId', '==', user.username));
+    }
+    
+    const qSales = query(
+      baseQuery,
+      where('date', '>=', yearStart),
+      where('date', '<=', yearEnd)
+    );
 
     const unsubSales = onSnapshot(qSales, (snapshot) => {
       const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -101,7 +111,7 @@ export default function Sales() {
       unsubStores();
       unsubSales();
     };
-  }, [user]);
+  }, [user, filterYear]);
 
   const [prevYearData, setPrevYearData] = useState<Record<string, number>>({});
 
@@ -482,7 +492,7 @@ export default function Sales() {
 
   const chartData = filteredSales.slice(0, 10).reverse().map(sale => ({
     name: sale.date ? format(parseISO(sale.date), 'dd MMM') : 'Unknown',
-    sales: sale.totalAfterTax || 0
+    sales: sale.netSales || 0
   }));
 
   const monthsList = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -498,8 +508,8 @@ export default function Sales() {
         const m = parts[1];
         if (y === filterYear && (filterStore === 'All' || s.storeId === filterStore)) {
           const monthIndex = parseInt(m) - 1;
-          currentYearSalesArray[monthIndex] += (s.totalAfterTax || 0);
-          currentQtrSales[Math.floor(monthIndex / 3)] += (s.totalAfterTax || 0);
+          currentYearSalesArray[monthIndex] += (s.netSales || 0);
+          currentQtrSales[Math.floor(monthIndex / 3)] += (s.netSales || 0);
         }
       }
     }
@@ -660,7 +670,9 @@ export default function Sales() {
       {/* Yearly Comparison */}
       <div className="card p-6 overflow-x-auto">
         <div className="flex justify-between items-center mb-6 min-w-[800px]">
-          <h3 className="text-lg font-semibold text-slate-800 font-display">Year-over-Year Comparison</h3>
+          <h3 className="text-lg font-semibold text-slate-800 font-display">
+            Year-over-Year Comparison <span className="text-sm font-normal text-slate-500 ml-2">(Net Sales)</span>
+          </h3>
           <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Click cells in {parseInt(filterYear) - 1} row to input target/past sales</span>
         </div>
         
@@ -750,7 +762,9 @@ export default function Sales() {
         </div>
 
         <div className="min-w-[400px] w-full max-w-2xl">
-          <h4 className="text-md font-semibold text-slate-800 mb-3">Quarterly Comparison</h4>
+          <h4 className="text-md font-semibold text-slate-800 mb-3">
+            Quarterly Comparison <span className="text-xs font-normal text-slate-500 ml-1">(Net Sales)</span>
+          </h4>
           <table className="w-full text-sm text-right border-collapse border border-slate-200">
             <thead>
               <tr className="bg-slate-800 text-white">

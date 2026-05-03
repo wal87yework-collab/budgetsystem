@@ -40,9 +40,19 @@ export default function Expenses() {
       setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const qExpenses = user?.role === 'store'
-      ? query(collection(db, 'expenses'), where('storeId', '==', user.username))
-      : collection(db, 'expenses');
+    const yearStart = `${filterYear}-01-01`;
+    const yearEnd = `${filterYear}-12-31`;
+
+    let baseQuery = collection(db, 'expenses');
+    if (user?.role === 'store') {
+      baseQuery = query(collection(db, 'expenses'), where('storeId', '==', user.username));
+    }
+
+    const qExpenses = query(
+      baseQuery,
+      where('date', '>=', yearStart),
+      where('date', '<=', yearEnd)
+    );
     const unsubExpenses = onSnapshot(qExpenses, (snapshot) => {
       const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       expensesData.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -51,7 +61,7 @@ export default function Expenses() {
     });
 
     return () => { unsubStores(); unsubSuppliers(); unsubExpenses(); };
-  }, [user]);
+  }, [user, filterYear]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

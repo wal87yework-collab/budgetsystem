@@ -174,9 +174,7 @@ export default function Stores() {
                 <th className="table-header">License Expiry</th>
                 <th className="table-header">Water Filter Expiry</th>
                 <th className="table-header">Fire Ext Expiry</th>
-                {user?.role === 'admin' && (
-                  <th className="table-header text-center">Actions</th>
-                )}
+                <th className="table-header text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -217,14 +215,14 @@ export default function Stores() {
                         </span>
                       </div>
                     </td>
-                    {user?.role === 'admin' && (
-                      <td className="table-cell text-center">
-                        <div className="flex justify-center gap-3">
-                          <button onClick={() => handleEdit(store)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
+                    <td className="table-cell text-center">
+                      <div className="flex justify-center gap-3">
+                        <button onClick={() => handleEdit(store)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
+                        {user?.role === 'admin' && (
                           <button onClick={() => handleDelete(store.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </td>
-                    )}
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -246,16 +244,17 @@ export default function Stores() {
             <form onSubmit={handleSave} className="p-6 space-y-5">
               <div>
                 <label className="label-text">Store Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input type="text" required className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Store Number</label>
-                <input type="text" className="input-field" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
+                <input type="text" className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Company</label>
                 <select 
-                  className="input-field" 
+                  className="input-field disabled:opacity-50" 
+                  disabled={user?.role !== 'admin'}
                   value={formData.company} 
                   onChange={e => setFormData({...formData, company: e.target.value})}
                 >

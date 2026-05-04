@@ -166,19 +166,21 @@ export default function Staff() {
             </button>
           </div>
 
-          <button 
-            onClick={() => {
-              setFormData(initialFormState);
-              if (user?.role === 'store') {
-                setFormData(prev => ({ ...prev, storeId: user.username }));
-              }
-              setEditingId(null);
-              setIsModalOpen(true);
-            }}
-            className="btn-primary"
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> Add Staff
-          </button>
+          {user?.role === 'admin' && (
+            <button 
+              onClick={() => {
+                setFormData(initialFormState);
+                if (user?.role === 'store') {
+                  setFormData(prev => ({ ...prev, storeId: user.username }));
+                }
+                setEditingId(null);
+                setIsModalOpen(true);
+              }}
+              className="btn-primary"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" /> Add Staff
+            </button>
+          )}
         </div>
       </div>
 
@@ -242,7 +244,9 @@ export default function Staff() {
                     <td className="table-cell text-center">
                       <div className="flex justify-center gap-3">
                         <button onClick={() => handleEdit(member)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(member.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        {user?.role === 'admin' && (
+                          <button onClick={() => handleDelete(member.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -280,15 +284,15 @@ export default function Staff() {
               </div>
               <div>
                 <label className="label-text">Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input type="text" required className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Phone</label>
-                <input type="text" className="input-field" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                <input type="text" className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Iqama Number</label>
-                <input type="text" className="input-field" value={formData.iqamaNumber} onChange={e => setFormData({...formData, iqamaNumber: e.target.value})} />
+                <input type="text" className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.iqamaNumber} onChange={e => setFormData({...formData, iqamaNumber: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Iqama Expiry</label>
@@ -303,7 +307,8 @@ export default function Staff() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="checkbox" 
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                    disabled={user?.role !== 'admin'}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 disabled:opacity-50"
                     checked={formData.sandwichArtist1Check === 'Yes'}
                     onChange={e => setFormData({...formData, sandwichArtist1Check: e.target.checked ? 'Yes' : 'No'})}
                   />
@@ -313,7 +318,8 @@ export default function Staff() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="checkbox" 
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                    disabled={user?.role !== 'admin'}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 disabled:opacity-50"
                     checked={formData.sandwichArtist2Check === 'Yes'}
                     onChange={e => setFormData({...formData, sandwichArtist2Check: e.target.checked ? 'Yes' : 'No'})}
                   />

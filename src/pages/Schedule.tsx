@@ -79,25 +79,29 @@ export default function Schedule() {
       const prevMonthStr = prevMonthNum.toString().padStart(2, '0');
       const prevYearStr = prevYearNum.toString();
 
-      for (const staff of staffList) {
-        // Current month
+      const promises = staffList.map(async (staff) => {
         const docId = `schedule_${staff.id}_${year}_${month}`;
-        const docSnap = await getDoc(doc(db, 'schedules', docId));
+        const prevDocId = `schedule_${staff.id}_${prevYearStr}_${prevMonthStr}`;
+
+        const [docSnap, prevDocSnap] = await Promise.all([
+          getDoc(doc(db, 'schedules', docId)),
+          getDoc(doc(db, 'schedules', prevDocId))
+        ]);
+
         if (docSnap.exists()) {
           newSchedules[staff.id] = docSnap.data().days || {};
         } else {
           newSchedules[staff.id] = {};
         }
 
-        // Previous month
-        const prevDocId = `schedule_${staff.id}_${prevYearStr}_${prevMonthStr}`;
-        const prevDocSnap = await getDoc(doc(db, 'schedules', prevDocId));
         if (prevDocSnap.exists()) {
           newPrevSchedules[staff.id] = prevDocSnap.data().days || {};
         } else {
           newPrevSchedules[staff.id] = {};
         }
-      }
+      });
+      
+      await Promise.all(promises);
       
       setSchedules(newSchedules);
       setPrevSchedules(newPrevSchedules);
@@ -386,15 +390,18 @@ export default function Schedule() {
       </div>
 
       {/* Monthly Schedule */}
-      <div className="card">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="text-sm font-medium text-slate-700">Monthly Schedule ({month}/{year})</h3>
+      <div className="card shadow-sm border mt-6">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 rounded-t-xl">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5 text-indigo-500" />
+            <h3 className="font-semibold text-slate-800">Monthly Schedule ({month}/{year})</h3>
+          </div>
           <div className="flex gap-2">
-            <button onClick={handleExportSchedulePDF} className="btn-secondary py-1 px-2 text-xs" title="Export PDF">
-              <Download className="w-3 h-3 text-red-500 mr-1" /> PDF
+            <button onClick={handleExportSchedulePDF} className="btn-secondary py-1.5 px-3 text-xs" title="Export PDF">
+              <Download className="w-3.5 h-3.5 text-red-500 mr-1.5" /> PDF
             </button>
-            <button onClick={handleExportScheduleExcel} className="btn-secondary py-1 px-2 text-xs" title="Export Excel">
-              <FileSpreadsheet className="w-3 h-3 text-emerald-500 mr-1" /> Excel
+            <button onClick={handleExportScheduleExcel} className="btn-secondary py-1.5 px-3 text-xs" title="Export Excel">
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500 mr-1.5" /> Excel
             </button>
           </div>
         </div>
@@ -476,17 +483,20 @@ export default function Schedule() {
 
       {/* Overtime Summary */}
       {!loading && staffList.length > 0 && (
-        <div className="card">
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 className="text-sm font-medium text-slate-700">
-              Overtime Summary ({getReportDateRange().start} To {getReportDateRange().end})
-            </h3>
+        <div className="card shadow-sm border mt-6">
+          <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 rounded-t-xl">
+            <div className="flex items-center gap-2">
+               <CalendarDays className="w-5 h-5 text-indigo-500" />
+               <h3 className="font-semibold text-slate-800">
+                 Overtime Summary ({getReportDateRange().start} To {getReportDateRange().end})
+               </h3>
+            </div>
             <div className="flex gap-2">
-              <button onClick={handleExportPDF} className="btn-secondary py-1 px-2 text-xs" title="Export PDF">
-                <Download className="w-3 h-3 text-red-500 mr-1" /> PDF
+              <button onClick={handleExportPDF} className="btn-secondary py-1.5 px-3 text-xs" title="Export PDF">
+                <Download className="w-3.5 h-3.5 text-red-500 mr-1.5" /> PDF
               </button>
-              <button onClick={handleExportExcel} className="btn-secondary py-1 px-2 text-xs" title="Export Excel">
-                <FileSpreadsheet className="w-3 h-3 text-emerald-500 mr-1" /> Excel
+              <button onClick={handleExportExcel} className="btn-secondary py-1.5 px-3 text-xs" title="Export Excel">
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500 mr-1.5" /> Excel
               </button>
             </div>
           </div>

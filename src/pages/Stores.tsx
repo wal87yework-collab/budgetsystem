@@ -13,6 +13,7 @@ export default function Stores() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const initialFormState = {
     name: '', number: '', company: '', 
@@ -110,9 +111,21 @@ export default function Stores() {
     }
   };
 
+  const filteredStores = stores.filter(store => {
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        store.name?.toLowerCase().includes(search) ||
+        store.number?.toLowerCase().includes(search) ||
+        store.company?.toLowerCase().includes(search)
+      );
+    }
+    return true;
+  });
+
   const handleExportPDF = () => {
     const columns = ['Store Name', 'Store Number', 'Company', 'License Expiry', 'Water Filter Expiry', 'Fire Ext Expiry'];
-    const data = stores.map(s => [
+    const data = filteredStores.map(s => [
       s.name, s.number, s.company, 
       `${s.licenseExpiry || ''} (${s.licenseRem || ''})`, 
       `${s.waterFilterExpiry || ''} (${s.waterFilterRem || ''})`,
@@ -122,7 +135,7 @@ export default function Stores() {
   };
 
   const handleExportExcel = () => {
-    const data = stores.map(s => ({
+    const data = filteredStores.map(s => ({
       'Store Name': s.name, 'Store Number': s.number, Company: s.company, 
       'License Expiry': s.licenseExpiry, 'License Rem': s.licenseRem,
       'Water Filter Expiry': s.waterFilterExpiry, 'Water Filter Rem': s.waterFilterRem,
@@ -139,8 +152,18 @@ export default function Stores() {
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-slate-900 font-display">Stores Management</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-2 border-slate-200 pr-3 mr-1">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-grow sm:flex-grow-0 sm:min-w-[200px]">
+             <input
+                type="text"
+                placeholder="Search stores..."
+                className="input-field pl-9 py-1.5 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+             />
+             <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <div className="flex gap-2 border-l border-slate-200 pl-3 ml-1">
             <button onClick={handleExportPDF} className="btn-secondary py-1.5 px-3" title="Export PDF">
               <Download className="w-4 h-4 text-red-500" />
             </button>
@@ -163,63 +186,90 @@ export default function Stores() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card shadow-sm border mt-6">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
+          <div className="flex items-center gap-2">
+            <Store className="w-5 h-5 text-indigo-500" />
+            <h3 className="font-semibold text-slate-800">Stores Directory</h3>
+          </div>
+          <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200">
+            {filteredStores.length} Store{filteredStores.length !== 1 ? 's' : ''}
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead>
-              <tr>
-                <th className="table-header">Store Name</th>
-                <th className="table-header">Store Number</th>
-                <th className="table-header">Company</th>
-                <th className="table-header">License Expiry</th>
-                <th className="table-header">Water Filter Expiry</th>
-                <th className="table-header">Fire Ext Expiry</th>
-                <th className="table-header text-center">Actions</th>
+              <tr className="bg-slate-50">
+                <th className="table-header text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6 text-left">Store Info</th>
+                <th className="table-header text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6 text-left">Company</th>
+                <th className="table-header text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6 text-left">License Details</th>
+                <th className="table-header text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6 text-left">Water Filter</th>
+                <th className="table-header text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6 text-left">Fire Extinguisher</th>
+                <th className="table-header text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {stores.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">No stores found.</td></tr>
+              {filteredStores.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500 font-medium">No stores found for the selected view.</p>
+                  </td>
+                </tr>
               ) : (
-                stores.map((store) => (
-                  <tr key={store.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="table-cell font-medium text-slate-900">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-4 h-4 text-slate-400" />
-                        {store.name}
+                filteredStores.map((store) => (
+                  <tr key={store.id} className="hover:bg-indigo-50/30 transition-colors">
+                    <td className="table-cell">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+                          <Store className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">{store.name}</p>
+                          <p className="text-xs text-slate-500">#{store.number || 'No number'}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="table-cell">{store.number}</td>
-                    <td className="table-cell">{store.company}</td>
-                    <td className="table-cell whitespace-pre-line">
-                      {store.licenseExpiry}
-                      <div className="mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${store.licenseRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                          {store.licenseRem}
-                        </span>
+                    <td className="table-cell font-medium text-slate-700">{store.company || '-'}</td>
+                    <td className="table-cell whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-800">{store.licenseExpiry || 'Not provided'}</span>
+                        {store.licenseRem && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] w-fit font-bold uppercase tracking-wider ${store.licenseRem?.includes('Expired') ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {store.licenseRem}
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="table-cell whitespace-pre-line">
-                      {store.waterFilterExpiry}
-                      <div className="mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${store.waterFilterRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                          {store.waterFilterRem}
-                        </span>
+                    <td className="table-cell whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-800">{store.waterFilterExpiry || 'Not provided'}</span>
+                        {store.waterFilterRem && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] w-fit font-bold uppercase tracking-wider ${store.waterFilterRem?.includes('Expired') ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {store.waterFilterRem}
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="table-cell whitespace-pre-line">
-                      {store.fireExtExpiry}
-                      <div className="mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${store.fireExtRem?.includes('Expired') ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                          {store.fireExtRem}
-                        </span>
+                    <td className="table-cell whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-800">{store.fireExtExpiry || 'Not provided'}</span>
+                        {store.fireExtRem && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] w-fit font-bold uppercase tracking-wider ${store.fireExtRem?.includes('Expired') ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {store.fireExtRem}
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="table-cell text-center">
-                      <div className="flex justify-center gap-3">
-                        <button onClick={() => handleEdit(store)} className="text-brand-600 hover:text-brand-900 transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
+                    <td className="table-cell text-center align-middle">
+                      <div className="flex justify-center gap-2">
+                        <button onClick={() => handleEdit(store)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors" title="Edit Store">
+                          <Edit className="w-4 h-4" />
+                        </button>
                         {user?.role === 'admin' && (
-                          <button onClick={() => handleDelete(store.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(store.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Delete Store">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
                     </td>
@@ -233,47 +283,59 @@ export default function Stores() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8 transform transition-all">
-            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900 font-display">{editingId ? 'Edit Store' : 'Add New Store'}</h2>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 transform transition-all">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
+              <h2 className="text-xl font-bold text-slate-900 font-display flex items-center gap-2">
+                <Store className="w-5 h-5 text-indigo-500" />
+                {editingId ? 'Edit Store' : 'Add New Store'}
+              </h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-6 space-y-5">
-              <div>
-                <label className="label-text">Store Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <form onSubmit={handleSave} className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="label-text">Store Name <span className="text-red-500">*</span></label>
+                  <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                </div>
+                <div>
+                  <label className="label-text">Store Number</label>
+                  <input type="text" className="input-field" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="label-text">Company</label>
+                  <select 
+                    className="input-field" 
+                    value={formData.company} 
+                    onChange={e => setFormData({...formData, company: e.target.value})}
+                  >
+                    <option value="">Select Company...</option>
+                    {companies.map(c => (
+                      <option key={c.id} value={c.name || 'Unnamed Company'}>{c.name || 'Unnamed Company'}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="label-text">Store Number</label>
-                <input type="text" className="input-field" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
-              </div>
-              <div>
-                <label className="label-text">Company</label>
-                <select 
-                  className="input-field" 
-                  value={formData.company} 
-                  onChange={e => setFormData({...formData, company: e.target.value})}
-                >
-                  <option value="">Select Company...</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.name || 'Unnamed Company'}>{c.name || 'Unnamed Company'}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label-text">License Expiry</label>
-                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
-              </div>
-              <div>
-                <label className="label-text">Water Filter Expiry</label>
-                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.waterFilterExpiry} onChange={e => setFormData({...formData, waterFilterExpiry: e.target.value})} />
-              </div>
-              <div>
-                <label className="label-text">Fire Extinguisher Expiry</label>
-                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.fireExtExpiry} onChange={e => setFormData({...formData, fireExtExpiry: e.target.value})} />
+
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                <h4 className="text-sm font-semibold text-slate-800 border-b border-slate-200 pb-2">Compliance Expiry Dates</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="label-text text-xs">License Expiry</label>
+                    <input type="date" disabled={user?.role !== 'admin'} className="input-field text-sm disabled:bg-slate-100 disabled:opacity-75" value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label-text text-xs">Water Filter Expiry</label>
+                    <input type="date" disabled={user?.role !== 'admin'} className="input-field text-sm disabled:bg-slate-100 disabled:opacity-75" value={formData.waterFilterExpiry} onChange={e => setFormData({...formData, waterFilterExpiry: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label-text text-xs">Fire Extinguisher Expiry</label>
+                    <input type="date" disabled={user?.role !== 'admin'} className="input-field text-sm disabled:bg-slate-100 disabled:opacity-75" value={formData.fireExtExpiry} onChange={e => setFormData({...formData, fireExtExpiry: e.target.value})} />
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">

@@ -298,18 +298,19 @@ export default function Stores() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="label-text">Store Name <span className="text-red-500">*</span></label>
-                  <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  <input type="text" required disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-100 disabled:opacity-75" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
                 <div>
                   <label className="label-text">Store Number</label>
-                  <input type="text" className="input-field" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
+                  <input type="text" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-100 disabled:opacity-75" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
                 </div>
                 
                 <div className="md:col-span-2">
                   <label className="label-text">Company</label>
                   <select 
-                    className="input-field" 
+                    className="input-field disabled:bg-slate-100 disabled:opacity-75" 
                     value={formData.company} 
+                    disabled={user?.role !== 'admin'}
                     onChange={e => setFormData({...formData, company: e.target.value})}
                   >
                     <option value="">Select Company...</option>
@@ -325,15 +326,15 @@ export default function Stores() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="label-text text-xs">License Expiry</label>
-                    <input type="date" disabled={user?.role !== 'admin'} className="input-field text-sm disabled:bg-slate-100 disabled:opacity-75" value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
+                    <input type="date" className="input-field text-sm" value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
                   </div>
                   <div>
                     <label className="label-text text-xs">Water Filter Expiry</label>
-                    <input type="date" disabled={user?.role !== 'admin'} className="input-field text-sm disabled:bg-slate-100 disabled:opacity-75" value={formData.waterFilterExpiry} onChange={e => setFormData({...formData, waterFilterExpiry: e.target.value})} />
+                    <input type="date" className="input-field text-sm" value={formData.waterFilterExpiry} onChange={e => setFormData({...formData, waterFilterExpiry: e.target.value})} />
                   </div>
                   <div>
                     <label className="label-text text-xs">Fire Extinguisher Expiry</label>
-                    <input type="date" disabled={user?.role !== 'admin'} className="input-field text-sm disabled:bg-slate-100 disabled:opacity-75" value={formData.fireExtExpiry} onChange={e => setFormData({...formData, fireExtExpiry: e.target.value})} />
+                    <input type="date" className="input-field text-sm" value={formData.fireExtExpiry} onChange={e => setFormData({...formData, fireExtExpiry: e.target.value})} />
                   </div>
                 </div>
               </div>

@@ -284,31 +284,30 @@ export default function Staff() {
               </div>
               <div>
                 <label className="label-text">Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Phone</label>
-                <input type="text" className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                <input type="text" className="input-field" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Iqama Number</label>
-                <input type="text" className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.iqamaNumber} onChange={e => setFormData({...formData, iqamaNumber: e.target.value})} />
+                <input type="text" className="input-field" value={formData.iqamaNumber} onChange={e => setFormData({...formData, iqamaNumber: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Iqama Expiry</label>
-                <input type="date" className="input-field" value={formData.iqamaExpiry} onChange={e => setFormData({...formData, iqamaExpiry: e.target.value})} />
+                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.iqamaExpiry} onChange={e => setFormData({...formData, iqamaExpiry: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Baladia Expiry</label>
-                <input type="date" className="input-field" value={formData.baladiaExpiry} onChange={e => setFormData({...formData, baladiaExpiry: e.target.value})} />
+                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.baladiaExpiry} onChange={e => setFormData({...formData, baladiaExpiry: e.target.value})} />
               </div>
               
               <div className="flex gap-6 mt-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="checkbox" 
-                    disabled={user?.role !== 'admin'}
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 disabled:opacity-50"
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                     checked={formData.sandwichArtist1Check === 'Yes'}
                     onChange={e => setFormData({...formData, sandwichArtist1Check: e.target.checked ? 'Yes' : 'No'})}
                   />
@@ -318,8 +317,7 @@ export default function Staff() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="checkbox" 
-                    disabled={user?.role !== 'admin'}
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 disabled:opacity-50"
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                     checked={formData.sandwichArtist2Check === 'Yes'}
                     onChange={e => setFormData({...formData, sandwichArtist2Check: e.target.checked ? 'Yes' : 'No'})}
                   />

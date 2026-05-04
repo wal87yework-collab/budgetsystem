@@ -43,7 +43,7 @@ export default function Expenses() {
     const yearStart = `${filterYear}-01-01`;
     const yearEnd = `${filterYear}-12-31`;
 
-    let baseQuery = collection(db, 'expenses');
+    let baseQuery: any = collection(db, 'expenses');
     if (user?.role === 'store') {
       baseQuery = query(collection(db, 'expenses'), where('storeId', '==', user.username));
     }
@@ -53,8 +53,8 @@ export default function Expenses() {
       where('date', '>=', yearStart),
       where('date', '<=', yearEnd)
     );
-    const unsubExpenses = onSnapshot(qExpenses, (snapshot) => {
-      const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const unsubExpenses = onSnapshot(qExpenses, (snapshot: any) => {
+      const expensesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
       expensesData.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setExpenses(expensesData);
       setLoading(false);

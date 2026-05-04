@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [staffCount, setStaffCount] = useState(0);
   const [storeCount, setStoreCount] = useState(0);
+  const [storesData, setStoresData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { startDate, endDate } = useMemo(() => {
@@ -56,47 +57,49 @@ export default function Dashboard() {
     let unsubStores = () => {};
 
     // Fetch Sales
-    let qSales = collection(db, 'sales');
+    let qSales: any = collection(db, 'sales');
     if (user?.role === 'store') {
       qSales = query(collection(db, 'sales'), where('storeId', '==', user.username), where('date', '>=', startDate), where('date', '<=', endDate));
     } else {
       qSales = query(collection(db, 'sales'), where('date', '>=', startDate), where('date', '<=', endDate));
     }
 
-    unsubSales = onSnapshot(qSales, (snapshot) => {
-      const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    unsubSales = onSnapshot(qSales, (snapshot: any) => {
+      const salesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
       setSales(salesData);
     });
 
     // Fetch Expenses
-    let qExpenses = collection(db, 'expenses');
+    let qExpenses: any = collection(db, 'expenses');
     if (user?.role === 'store') {
       qExpenses = query(collection(db, 'expenses'), where('storeId', '==', user.username), where('date', '>=', startDate), where('date', '<=', endDate));
     } else {
       qExpenses = query(collection(db, 'expenses'), where('date', '>=', startDate), where('date', '<=', endDate));
     }
 
-    unsubExpenses = onSnapshot(qExpenses, (snapshot) => {
-      const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    unsubExpenses = onSnapshot(qExpenses, (snapshot: any) => {
+      const expensesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
       setExpenses(expensesData);
     });
 
     // Fetch Staff Check
-    const qStaff = user?.role === 'store'
+    const qStaff: any = user?.role === 'store'
       ? query(collection(db, 'staff'), where('storeId', '==', user.username))
       : collection(db, 'staff');
     
-    unsubStaff = onSnapshot(qStaff, (snapshot) => {
+    unsubStaff = onSnapshot(qStaff, (snapshot: any) => {
       setStaffCount(snapshot.docs.length);
     });
 
     // Fetch Stores Check
-    const qStores = user?.role === 'store'
+    const qStores: any = user?.role === 'store'
       ? query(collection(db, 'stores'), where('name', '==', user.username))
       : collection(db, 'stores');
       
-    unsubStores = onSnapshot(qStores, (snapshot) => {
-      setStoreCount(snapshot.docs.length);
+    unsubStores = onSnapshot(qStores, (snapshot: any) => {
+      const sData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
+      setStoresData(sData);
+      setStoreCount(sData.length);
       setLoading(false);
     });
 
@@ -128,10 +131,10 @@ export default function Dashboard() {
     return acc;
   }, {} as Record<string, number>);
   
-  const topStores = Object.entries(storeSales)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, value]) => ({ name, value }));
+  const storePerformance = storesData.map((store: any) => {
+    const value = storeSales[store.name] || 0;
+    return { name: store.name, value };
+  }).sort((a: any, b: any) => b.value - a.value);
 
   // Chart Data preparation
   const chartData = useMemo(() => {
@@ -255,7 +258,7 @@ export default function Dashboard() {
         </div>
         
         <div className="flex flex-col gap-6">
-          <div className="card p-6 shadow-sm border flex-grow">
+          <div className="card p-6 shadow-sm border">
             <h3 className="text-lg font-semibold text-slate-800 font-display mb-4 flex items-center gap-2">
               <Target className="w-5 h-5 text-emerald-500" />
               Quick Summary
@@ -285,61 +288,115 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {user?.role === 'admin' ? (
-            <div className="card p-6 shadow-sm border max-h-80 overflow-y-auto mt-6">
-              <h3 className="text-lg font-semibold text-slate-800 font-display mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-amber-500" />
-                Top Performing Stores
-              </h3>
-              <div className="space-y-3">
-                {topStores.map((store, i) => (
-                  <div key={store.name} className="flex items-center justify-between group">
+          <div className="card p-6 shadow-sm border max-h-80 overflow-y-auto">
+            <h3 className="text-lg font-semibold text-slate-800 font-display mb-4 flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-red-500" />
+              Top Expenses by Supplier
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(expenses.reduce((acc, exp) => {
+                acc[exp.supplier || 'Unknown'] = (acc[exp.supplier || 'Unknown'] || 0) + (exp.amount || 0);
+                return acc;
+              }, {} as Record<string, number>))
+                .sort((a: any, b: any) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([supplier, amount]: any, i) => (
+                  <div key={supplier} className="flex items-center justify-between group">
                     <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500">
                         {i + 1}
                       </div>
-                      <p className="text-sm font-medium text-slate-800 truncate max-w-[120px]">{store.name}</p>
+                      <p className="text-sm font-medium text-slate-800 truncate max-w-[120px]" title={supplier}>{supplier}</p>
                     </div>
-                    <span className="text-sm font-bold text-slate-900">{store.value.toFixed(2)} SAR</span>
+                    <span className="text-sm font-bold text-slate-900">{amount.toFixed(2)} SAR</span>
                   </div>
                 ))}
-                {topStores.length === 0 && (
-                  <p className="text-sm text-slate-500 py-4 text-center">No sales data available for this period.</p>
-                )}
-              </div>
+              {expenses.length === 0 && (
+                <p className="text-sm text-slate-500 py-4 text-center">No expense data available for this period.</p>
+              )}
             </div>
-          ) : (
-             <div className="card p-6 shadow-sm border max-h-80 overflow-y-auto mt-6">
-              <h3 className="text-lg font-semibold text-slate-800 font-display mb-4 flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-red-500" />
-                Top Expenses by Supplier
-              </h3>
-              <div className="space-y-3">
-                {Object.entries(expenses.reduce((acc, exp) => {
-                  acc[exp.supplier || 'Unknown'] = (acc[exp.supplier || 'Unknown'] || 0) + (exp.amount || 0);
-                  return acc;
-                }, {} as Record<string, number>))
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 5)
-                  .map(([supplier, amount], i) => (
-                    <div key={supplier} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500">
-                          {i + 1}
-                        </div>
-                        <p className="text-sm font-medium text-slate-800 truncate max-w-[120px]" title={supplier}>{supplier}</p>
-                      </div>
-                      <span className="text-sm font-bold text-slate-900">{amount.toFixed(2)} SAR</span>
-                    </div>
-                  ))}
-                {expenses.length === 0 && (
-                  <p className="text-sm text-slate-500 py-4 text-center">No expense data available for this period.</p>
-                )}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
+
+      {user?.role === 'admin' && (
+        <div className="card shadow-sm border mt-8">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-800 font-display flex items-center gap-2">
+              <Store className="w-5 h-5 text-indigo-500" />
+              Store Performance Overview
+            </h3>
+            <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-md font-medium">
+              {storePerformance.length} Stores
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider w-16">Rank</th>
+                  <th className="py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Store Name</th>
+                  <th className="py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Net Sales</th>
+                  <th className="py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider w-1/3">Performance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {storePerformance.map((store: any, i: number) => {
+                  const maxSales = Math.max(...storePerformance.map((s: any) => s.value), 1);
+                  const widthPercent = (store.value / maxSales) * 100;
+                  return (
+                    <tr key={store.name} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          i === 0 ? 'bg-amber-100 text-amber-700' : 
+                          i === 1 ? 'bg-slate-200 text-slate-700' : 
+                          i === 2 ? 'bg-orange-100 text-orange-700' : 
+                          'bg-slate-100 text-slate-500'
+                        }`}>
+                          {i + 1}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                            <Store className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{store.name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Store Branch</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap text-right">
+                        <span className="text-sm font-bold text-slate-900">{(store.value || 0).toFixed(2)}</span>
+                        <span className="text-xs text-slate-500 ml-1">SAR</span>
+                      </td>
+                      <td className="py-4 px-6 min-w-[200px]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div 
+                              className={`h-2.5 rounded-full ${i === 0 ? 'bg-amber-500' : i < 3 ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                              style={{ width: `${widthPercent}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs font-medium text-slate-600 min-w-[40px] text-right">{Math.round(widthPercent)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {storePerformance.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-slate-500">
+                      No stores data available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       
     </div>
   );

@@ -151,7 +151,7 @@ export default function Schedule() {
     if (dirty) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
-        const dirtyIds = Array.from(dirtyStaffRef.current);
+        const dirtyIds = Array.from(dirtyStaffRef.current) as string[];
         dirtyStaffRef.current.clear();
         saveStaffSchedules(dirtyIds, false);
         setDirty(false);

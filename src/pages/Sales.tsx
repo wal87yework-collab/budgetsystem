@@ -88,7 +88,7 @@ export default function Sales() {
     const yearStart = `${filterYear}-01-01`;
     const yearEnd = `${filterYear}-12-31`;
     
-    let baseQuery = collection(db, 'sales');
+    let baseQuery: any = collection(db, 'sales');
     if (user?.role === 'store') {
       baseQuery = query(collection(db, 'sales'), where('storeId', '==', user.username));
     }
@@ -99,8 +99,8 @@ export default function Sales() {
       where('date', '<=', yearEnd)
     );
 
-    const unsubSales = onSnapshot(qSales, (snapshot) => {
-      const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const unsubSales = onSnapshot(qSales, (snapshot: any) => {
+      const salesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
       // Sort by date descending
       salesData.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setSales(salesData);

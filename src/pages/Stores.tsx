@@ -244,17 +244,16 @@ export default function Stores() {
             <form onSubmit={handleSave} className="p-6 space-y-5">
               <div>
                 <label className="label-text">Store Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input type="text" required className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Store Number</label>
-                <input type="text" className="input-field disabled:opacity-50" disabled={user?.role !== 'admin'} value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
+                <input type="text" className="input-field" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Company</label>
                 <select 
-                  className="input-field disabled:opacity-50" 
-                  disabled={user?.role !== 'admin'}
+                  className="input-field" 
                   value={formData.company} 
                   onChange={e => setFormData({...formData, company: e.target.value})}
                 >
@@ -266,15 +265,15 @@ export default function Stores() {
               </div>
               <div>
                 <label className="label-text">License Expiry</label>
-                <input type="date" className="input-field" value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
+                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Water Filter Expiry</label>
-                <input type="date" className="input-field" value={formData.waterFilterExpiry} onChange={e => setFormData({...formData, waterFilterExpiry: e.target.value})} />
+                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.waterFilterExpiry} onChange={e => setFormData({...formData, waterFilterExpiry: e.target.value})} />
               </div>
               <div>
                 <label className="label-text">Fire Extinguisher Expiry</label>
-                <input type="date" className="input-field" value={formData.fireExtExpiry} onChange={e => setFormData({...formData, fireExtExpiry: e.target.value})} />
+                <input type="date" disabled={user?.role !== 'admin'} className="input-field disabled:bg-slate-50 disabled:opacity-75" value={formData.fireExtExpiry} onChange={e => setFormData({...formData, fireExtExpiry: e.target.value})} />
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">

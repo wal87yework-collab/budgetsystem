@@ -65,7 +65,7 @@ export default function Sales() {
 
   const initialFormState = {
     storeId: '', date: '', netSales: '', mastercard: '', span: '', visa: '',
-    stc: '', wasal: '', toYou: '', jahez: '', hungerStation: '',
+    jahez: '', hungerStation: '',
     advance: '', used: '', bankReceive: '', notes: ''
   };
   const [formData, setFormData] = useState(initialFormState);
@@ -141,12 +141,9 @@ export default function Sales() {
   const visa = parseNum(formData.visa);
   const totalAtms = mastercard + span + visa;
   
-  const stc = parseNum(formData.stc);
-  const wasal = parseNum(formData.wasal);
-  const toYou = parseNum(formData.toYou);
   const jahez = parseNum(formData.jahez);
   const hungerStation = parseNum(formData.hungerStation);
-  const totalApps = stc + wasal + toYou + jahez + hungerStation;
+  const totalApps = jahez + hungerStation;
   
   const royaltyFee = netSales * 0.08;
   const marketingFee = netSales * 0.045;
@@ -175,7 +172,7 @@ export default function Sales() {
     const saleData = {
       ...formData,
       netSales, tax, totalAfterTax, mastercard, span, visa, totalAtms,
-      stc, wasal, toYou, jahez, hungerStation, totalApps,
+      jahez, hungerStation, totalApps,
       royaltyFee, marketingFee, totalFees,
       cashSalesOfDay, advance, used, bankReceive, finalCashSales,
       createdAt: new Date().toISOString()
@@ -209,9 +206,6 @@ export default function Sales() {
       mastercard: sale.mastercard?.toString() || '',
       span: sale.span?.toString() || '',
       visa: sale.visa?.toString() || '',
-      stc: sale.stc?.toString() || '',
-      wasal: sale.wasal?.toString() || '',
-      toYou: sale.toYou?.toString() || '',
       jahez: sale.jahez?.toString() || '',
       hungerStation: sale.hungerStation?.toString() || '',
       advance: sale.advance?.toString() || '',
@@ -245,7 +239,7 @@ export default function Sales() {
   const salesColumns = [
     'Store', 'Date', 'Net Sales', 'Tax', 'Total w/ Tax', 
     'Mastercard', 'Span', 'Visa', 'Total ATMs', 
-    'STC', 'Wasal', 'ToYou', 'Jahez', 'HungerSt.', 'Total Apps', 
+    'Jahez', 'HungerSt.', 'Total Apps', 
     'Royalty', 'Marketing', 'Total Fees', 
     'Advance', 'Used', 'Cash Sales', 'Final Cash', 'Notes'
   ];
@@ -260,9 +254,6 @@ export default function Sales() {
     s.span?.toFixed(2) || '0.00', 
     s.visa?.toFixed(2) || '0.00', 
     s.totalAtms?.toFixed(2) || '0.00',
-    s.stc?.toFixed(2) || '0.00', 
-    s.wasal?.toFixed(2) || '0.00', 
-    s.toYou?.toFixed(2) || '0.00', 
     s.jahez?.toFixed(2) || '0.00', 
     s.hungerStation?.toFixed(2) || '0.00', 
     s.totalApps?.toFixed(2) || '0.00',
@@ -286,9 +277,6 @@ export default function Sales() {
     'Span': s.span || 0, 
     'Visa': s.visa || 0, 
     'Total ATMs': s.totalAtms || 0,
-    'STC': s.stc || 0, 
-    'Wasal': s.wasal || 0, 
-    'ToYou': s.toYou || 0, 
     'Jahez': s.jahez || 0, 
     'Hunger Station': s.hungerStation || 0, 
     'Total Apps': s.totalApps || 0,
@@ -342,9 +330,6 @@ export default function Sales() {
       [{ content: 'Total ATMs', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalAtms || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
 
       [{ content: 'APPS', colSpan: 2, styles: { halign: 'center', fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' } }],
-      ['Stc', Number(sale.stc || 0).toFixed(2)],
-      ['Wasal', Number(sale.wasal || 0).toFixed(2)],
-      ['To You', Number(sale.toYou || 0).toFixed(2)],
       ['Jahez', Number(sale.jahez || 0).toFixed(2)],
       ['Hunger Station', Number(sale.hungerStation || 0).toFixed(2)],
       [{ content: 'Total Apps', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalApps || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
@@ -923,18 +908,6 @@ export default function Sales() {
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
                 <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Apps</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-                  <div>
-                    <label className="label-text">Stc</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="label-text">Wasal</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="label-text">To You</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
-                  </div>
                   <div>
                     <label className="label-text">Jahez</label>
                     <input type="number" step="0.01" className="input-field" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />

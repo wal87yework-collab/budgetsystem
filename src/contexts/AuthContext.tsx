@@ -62,7 +62,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
-    const slug = slugify(username);
+    // Hardcoded rule for store 103011 - SBY JOUF 2
+    if (username.includes('103011')) {
+      if (password !== '123123') {
+        throw new Error('Invalid credentials. For store 103011 - SBY JOUF 2, the password is exactly 123123.');
+      }
+    }
+
+    let slug = slugify(username);
+    if (username.includes('103011')) {
+      slug = slug + '_v2'; // Bypass any old Firebase Auth account with wrong password that we can't reset
+    }
     const email = `${slug}@budgetsystem.local`;
     
     try {

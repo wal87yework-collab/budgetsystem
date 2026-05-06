@@ -65,7 +65,7 @@ export default function Sales() {
 
   const initialFormState = {
     storeId: '', date: '', netSales: '', mastercard: '', span: '', visa: '',
-    jahez: '', hungerStation: '', keeta: '',
+    stc: '', wasal: '', toYou: '', jahez: '', hungerStation: '', keeta: '',
     advance: '', used: '', bankReceive: '', notes: ''
   };
   const [formData, setFormData] = useState(initialFormState);
@@ -141,10 +141,13 @@ export default function Sales() {
   const visa = parseNum(formData.visa);
   const totalAtms = mastercard + span + visa;
   
+  const stc = parseNum(formData.stc);
+  const wasal = parseNum(formData.wasal);
+  const toYou = parseNum(formData.toYou);
   const jahez = parseNum(formData.jahez);
   const hungerStation = parseNum(formData.hungerStation);
   const keeta = parseNum(formData.keeta);
-  const totalApps = jahez + hungerStation + keeta;
+  const totalApps = stc + wasal + toYou + jahez + hungerStation + keeta;
   
   const royaltyFee = netSales * 0.08;
   const marketingFee = netSales * 0.045;
@@ -173,7 +176,7 @@ export default function Sales() {
     const saleData = {
       ...formData,
       netSales, tax, totalAfterTax, mastercard, span, visa, totalAtms,
-      jahez, hungerStation, keeta, totalApps,
+      stc, wasal, toYou, jahez, hungerStation, keeta, totalApps,
       royaltyFee, marketingFee, totalFees,
       cashSalesOfDay, advance, used, bankReceive, finalCashSales,
       createdAt: new Date().toISOString()
@@ -207,6 +210,9 @@ export default function Sales() {
       mastercard: sale.mastercard?.toString() || '',
       span: sale.span?.toString() || '',
       visa: sale.visa?.toString() || '',
+      stc: sale.stc?.toString() || '',
+      wasal: sale.wasal?.toString() || '',
+      toYou: sale.toYou?.toString() || '',
       jahez: sale.jahez?.toString() || '',
       hungerStation: sale.hungerStation?.toString() || '',
       keeta: sale.keeta?.toString() || '',
@@ -241,7 +247,7 @@ export default function Sales() {
   const salesColumns = [
     'Store', 'Date', 'Net Sales', 'Tax', 'Total w/ Tax', 
     'Mastercard', 'Span', 'Visa', 'Total ATMs', 
-    'Jahez', 'HungerSt.', 'Keeta', 'Total Apps', 
+    'STC', 'Wasal', 'ToYou', 'Jahez', 'HungerSt.', 'Keeta', 'Total Apps', 
     'Royalty', 'Marketing', 'Total Fees', 
     'Advance', 'Used', 'Cash Sales', 'Final Cash', 'Notes'
   ];
@@ -256,6 +262,9 @@ export default function Sales() {
     s.span?.toFixed(2) || '0.00', 
     s.visa?.toFixed(2) || '0.00', 
     s.totalAtms?.toFixed(2) || '0.00',
+    s.stc?.toFixed(2) || '0.00', 
+    s.wasal?.toFixed(2) || '0.00', 
+    s.toYou?.toFixed(2) || '0.00', 
     s.jahez?.toFixed(2) || '0.00', 
     s.hungerStation?.toFixed(2) || '0.00', 
     s.keeta?.toFixed(2) || '0.00',
@@ -280,6 +289,9 @@ export default function Sales() {
     'Span': s.span || 0, 
     'Visa': s.visa || 0, 
     'Total ATMs': s.totalAtms || 0,
+    'STC': s.stc || 0, 
+    'Wasal': s.wasal || 0, 
+    'ToYou': s.toYou || 0, 
     'Jahez': s.jahez || 0, 
     'Hunger Station': s.hungerStation || 0, 
     'Keeta': s.keeta || 0,
@@ -334,6 +346,9 @@ export default function Sales() {
       [{ content: 'Total ATMs', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalAtms || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
 
       [{ content: 'APPS', colSpan: 2, styles: { halign: 'center', fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' } }],
+      ['Stc', Number(sale.stc || 0).toFixed(2)],
+      ['Wasal', Number(sale.wasal || 0).toFixed(2)],
+      ['To You', Number(sale.toYou || 0).toFixed(2)],
       ['Jahez', Number(sale.jahez || 0).toFixed(2)],
       ['Hunger Station', Number(sale.hungerStation || 0).toFixed(2)],
       ['Keeta', Number(sale.keeta || 0).toFixed(2)],
@@ -478,6 +493,9 @@ export default function Sales() {
   const totalNetSalesAmount = filteredSales.reduce((sum, sale) => sum + (sale.netSales || 0), 0);
   const totalAtmsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalAtms || 0), 0);
   const totalAppsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalApps || 0), 0);
+  const totalStcAmount = filteredSales.reduce((sum, sale) => sum + (sale.stc || 0), 0);
+  const totalWasalAmount = filteredSales.reduce((sum, sale) => sum + (sale.wasal || 0), 0);
+  const totalToYouAmount = filteredSales.reduce((sum, sale) => sum + (sale.toYou || 0), 0);
   const totalJahezAmount = filteredSales.reduce((sum, sale) => sum + (sale.jahez || 0), 0);
   const totalHungerStationAmount = filteredSales.reduce((sum, sale) => sum + (sale.hungerStation || 0), 0);
   const totalKeetaAmount = filteredSales.reduce((sum, sale) => sum + (sale.keeta || 0), 0);
@@ -629,6 +647,33 @@ export default function Sales() {
           <div>
             <p className="text-sm font-medium text-slate-500">Total Apps</p>
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAppsAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 mr-4">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Stc</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalStcAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 mr-4">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Wasal</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalWasalAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-pink-50 text-pink-600 mr-4">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">To You</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalToYouAmount.toFixed(2)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -923,6 +968,18 @@ export default function Sales() {
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
                 <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Apps</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="label-text">Stc</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label-text">Wasal</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label-text">To You</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
+                  </div>
                   <div>
                     <label className="label-text">Jahez</label>
                     <input type="number" step="0.01" className="input-field" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />

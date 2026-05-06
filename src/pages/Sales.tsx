@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange, ShoppingBag, Bike, Zap } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
@@ -65,7 +65,7 @@ export default function Sales() {
 
   const initialFormState = {
     storeId: '', date: '', netSales: '', mastercard: '', span: '', visa: '',
-    jahez: '', hungerStation: '',
+    jahez: '', hungerStation: '', keeta: '',
     advance: '', used: '', bankReceive: '', notes: ''
   };
   const [formData, setFormData] = useState(initialFormState);
@@ -143,7 +143,8 @@ export default function Sales() {
   
   const jahez = parseNum(formData.jahez);
   const hungerStation = parseNum(formData.hungerStation);
-  const totalApps = jahez + hungerStation;
+  const keeta = parseNum(formData.keeta);
+  const totalApps = jahez + hungerStation + keeta;
   
   const royaltyFee = netSales * 0.08;
   const marketingFee = netSales * 0.045;
@@ -172,7 +173,7 @@ export default function Sales() {
     const saleData = {
       ...formData,
       netSales, tax, totalAfterTax, mastercard, span, visa, totalAtms,
-      jahez, hungerStation, totalApps,
+      jahez, hungerStation, keeta, totalApps,
       royaltyFee, marketingFee, totalFees,
       cashSalesOfDay, advance, used, bankReceive, finalCashSales,
       createdAt: new Date().toISOString()
@@ -208,6 +209,7 @@ export default function Sales() {
       visa: sale.visa?.toString() || '',
       jahez: sale.jahez?.toString() || '',
       hungerStation: sale.hungerStation?.toString() || '',
+      keeta: sale.keeta?.toString() || '',
       advance: sale.advance?.toString() || '',
       used: sale.used?.toString() || '',
       bankReceive: sale.bankReceive?.toString() || '',
@@ -239,7 +241,7 @@ export default function Sales() {
   const salesColumns = [
     'Store', 'Date', 'Net Sales', 'Tax', 'Total w/ Tax', 
     'Mastercard', 'Span', 'Visa', 'Total ATMs', 
-    'Jahez', 'HungerSt.', 'Total Apps', 
+    'Jahez', 'HungerSt.', 'Keeta', 'Total Apps', 
     'Royalty', 'Marketing', 'Total Fees', 
     'Advance', 'Used', 'Cash Sales', 'Final Cash', 'Notes'
   ];
@@ -256,6 +258,7 @@ export default function Sales() {
     s.totalAtms?.toFixed(2) || '0.00',
     s.jahez?.toFixed(2) || '0.00', 
     s.hungerStation?.toFixed(2) || '0.00', 
+    s.keeta?.toFixed(2) || '0.00',
     s.totalApps?.toFixed(2) || '0.00',
     s.royaltyFee?.toFixed(2) || '0.00', 
     s.marketingFee?.toFixed(2) || '0.00', 
@@ -279,6 +282,7 @@ export default function Sales() {
     'Total ATMs': s.totalAtms || 0,
     'Jahez': s.jahez || 0, 
     'Hunger Station': s.hungerStation || 0, 
+    'Keeta': s.keeta || 0,
     'Total Apps': s.totalApps || 0,
     'Royalty Fee': s.royaltyFee || 0, 
     'Marketing Fee': s.marketingFee || 0, 
@@ -332,6 +336,7 @@ export default function Sales() {
       [{ content: 'APPS', colSpan: 2, styles: { halign: 'center', fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' } }],
       ['Jahez', Number(sale.jahez || 0).toFixed(2)],
       ['Hunger Station', Number(sale.hungerStation || 0).toFixed(2)],
+      ['Keeta', Number(sale.keeta || 0).toFixed(2)],
       [{ content: 'Total Apps', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalApps || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
 
       [{ content: 'ROYALTY & MARKETING FEES', colSpan: 2, styles: { halign: 'center', fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' } }],
@@ -475,6 +480,7 @@ export default function Sales() {
   const totalAppsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalApps || 0), 0);
   const totalJahezAmount = filteredSales.reduce((sum, sale) => sum + (sale.jahez || 0), 0);
   const totalHungerStationAmount = filteredSales.reduce((sum, sale) => sum + (sale.hungerStation || 0), 0);
+  const totalKeetaAmount = filteredSales.reduce((sum, sale) => sum + (sale.keeta || 0), 0);
   const totalCashAmount = filteredSales.reduce((sum, sale) => sum + (sale.finalCashSales || 0), 0);
 
   const chartData = filteredSales.slice(0, 10).reverse().map(sale => ({
@@ -627,7 +633,7 @@ export default function Sales() {
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
           <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
-            <Smartphone className="w-6 h-6" />
+            <ShoppingBag className="w-6 h-6" />
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Jahez</p>
@@ -636,11 +642,20 @@ export default function Sales() {
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
           <div className="p-3 rounded-xl bg-yellow-50 text-yellow-600 mr-4">
-            <Smartphone className="w-6 h-6" />
+            <Bike className="w-6 h-6" />
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Hunger Station</p>
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalHungerStationAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
+            <Zap className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Keeta</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalKeetaAmount.toFixed(2)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all bg-gradient-to-br from-red-500 to-orange-500 shadow-md shadow-red-500/20 border-0 hover:-translate-y-0.5">
@@ -915,6 +930,10 @@ export default function Sales() {
                   <div>
                     <label className="label-text">Hunger Station</label>
                     <input type="number" step="0.01" className="input-field" value={formData.hungerStation} onChange={e => setFormData({...formData, hungerStation: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label-text">Keeta</label>
+                    <input type="number" step="0.01" className="input-field" value={formData.keeta} onChange={e => setFormData({...formData, keeta: e.target.value})} />
                   </div>
                   <div>
                     <label className="label-text">Total Apps</label>

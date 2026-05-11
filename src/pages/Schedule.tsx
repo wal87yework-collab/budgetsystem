@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { CalendarDays, Save, Download, FileSpreadsheet, CheckCircle2, X } from 'lucide-react';
@@ -79,29 +79,31 @@ export default function Schedule() {
       const prevMonthStr = prevMonthNum.toString().padStart(2, '0');
       const prevYearStr = prevYearNum.toString();
 
-      const promises = staffList.map(async (staff) => {
-        const docId = `schedule_${staff.id}_${year}_${month}`;
-        const prevDocId = `schedule_${staff.id}_${prevYearStr}_${prevMonthStr}`;
+      try {
+        const currentQuery = query(collection(db, 'schedules'), where('month', '==', month), where('year', '==', year));
+        const prevQuery = query(collection(db, 'schedules'), where('month', '==', prevMonthStr), where('year', '==', prevYearStr));
 
-        const [docSnap, prevDocSnap] = await Promise.all([
-          getDoc(doc(db, 'schedules', docId)),
-          getDoc(doc(db, 'schedules', prevDocId))
+        const [currentSnap, prevSnap] = await Promise.all([
+          getDocs(currentQuery),
+          getDocs(prevQuery)
         ]);
 
-        if (docSnap.exists()) {
-          newSchedules[staff.id] = docSnap.data().days || {};
-        } else {
-          newSchedules[staff.id] = {};
-        }
+        currentSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.staffId) {
+            newSchedules[data.staffId] = data.days || {};
+          }
+        });
 
-        if (prevDocSnap.exists()) {
-          newPrevSchedules[staff.id] = prevDocSnap.data().days || {};
-        } else {
-          newPrevSchedules[staff.id] = {};
-        }
-      });
-      
-      await Promise.all(promises);
+        prevSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.staffId) {
+            newPrevSchedules[data.staffId] = data.days || {};
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+      }
       
       setSchedules(newSchedules);
       setPrevSchedules(newPrevSchedules);
@@ -445,10 +447,17 @@ export default function Schedule() {
                       const cellData = schedules[staff.id]?.[day.toString()] || { status: '-' };
                       
                       return (
-                        <td key={day} className={`px-1 py-2 text-center align-top ${isWeekend ? 'bg-slate-50' : ''}`}>
-                          <div className="flex flex-col gap-1">
+                        <td key={day} className={`px-1 py-1.5 text-center align-top border-x border-slate-100 ${isWeekend ? 'bg-slate-50/80' : ''}`}>
+                          <div className="flex flex-col gap-1 items-center justify-start min-h-[46px]">
                             <select 
-                              className="text-xs border-slate-200 rounded p-1 w-full focus:ring-brand-500 focus:border-brand-500"
+                              className={`text-[11px] font-medium rounded px-1 min-h-[24px] w-[60px] text-center border-transparent shadow-sm hover:border-slate-300 transition-colors cursor-pointer appearance-none ${
+                                cellData.status === 'AM' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
+                                cellData.status === 'PM' ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' :
+                                cellData.status === 'DayOFF' ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' :
+                                cellData.status === 'Cancel' ? 'bg-red-50 text-red-700 hover:bg-red-100' :
+                                cellData.status === 'OverTime' ? 'bg-orange-50 text-orange-700 hover:bg-orange-100' :
+                                'bg-white text-slate-400 border-slate-200'
+                              }`}
                               value={cellData.status}
                               onChange={(e) => handleCellChange(staff.id, day, 'status', e.target.value)}
                             >
@@ -464,7 +473,7 @@ export default function Schedule() {
                                 type="number" 
                                 step="0.5"
                                 placeholder="Hrs"
-                                className="text-xs border-slate-200 rounded p-1 w-full text-center focus:ring-brand-500 focus:border-brand-500" 
+                                className="text-[10px] bg-orange-100/50 text-orange-800 border-orange-200 rounded p-0.5 w-[50px] text-center shadow-sm placeholder:text-orange-300 focus:ring-orange-500 focus:border-orange-500" 
                                 value={cellData.hours || ''}
                                 onChange={(e) => handleCellChange(staff.id, day, 'hours', e.target.value)}
                               />

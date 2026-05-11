@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange, ShoppingBag, Bike, Zap } from 'lucide-react';
+import { confirmDelete, confirmUpdate } from '../lib/alerts';
+import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange, ShoppingBag, Bike, Zap, Route, Utensils, Store, Coffee } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
@@ -162,6 +163,10 @@ export default function Sales() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (editingId) {
+      if (!(await confirmUpdate())) return;
+    }
+
     // Prevent duplicate entries for the same store and date
     if (!editingId) {
       const storeToCheck = user?.role === 'store' ? user.username : formData.storeId;
@@ -226,7 +231,7 @@ export default function Sales() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
+    if (await confirmDelete()) {
       try {
         await deleteDoc(doc(db, 'sales', id));
       } catch (error) {
@@ -262,9 +267,9 @@ export default function Sales() {
     s.span?.toFixed(2) || '0.00', 
     s.visa?.toFixed(2) || '0.00', 
     s.totalAtms?.toFixed(2) || '0.00',
-    s.stc?.toFixed(2) || '0.00', 
-    s.wasal?.toFixed(2) || '0.00', 
-    s.toYou?.toFixed(2) || '0.00', 
+    s.stc?.toFixed(2) || '0.00',
+    s.wasal?.toFixed(2) || '0.00',
+    s.toYou?.toFixed(2) || '0.00',
     s.jahez?.toFixed(2) || '0.00', 
     s.hungerStation?.toFixed(2) || '0.00', 
     s.keeta?.toFixed(2) || '0.00',
@@ -289,9 +294,9 @@ export default function Sales() {
     'Span': s.span || 0, 
     'Visa': s.visa || 0, 
     'Total ATMs': s.totalAtms || 0,
-    'STC': s.stc || 0, 
-    'Wasal': s.wasal || 0, 
-    'ToYou': s.toYou || 0, 
+    'STC': s.stc || 0,
+    'Wasal': s.wasal || 0,
+    'ToYou': s.toYou || 0,
     'Jahez': s.jahez || 0, 
     'Hunger Station': s.hungerStation || 0, 
     'Keeta': s.keeta || 0,
@@ -346,9 +351,9 @@ export default function Sales() {
       [{ content: 'Total ATMs', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalAtms || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
 
       [{ content: 'APPS', colSpan: 2, styles: { halign: 'center', fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' } }],
-      ['Stc', Number(sale.stc || 0).toFixed(2)],
+      ['STC', Number(sale.stc || 0).toFixed(2)],
       ['Wasal', Number(sale.wasal || 0).toFixed(2)],
-      ['To You', Number(sale.toYou || 0).toFixed(2)],
+      ['ToYou', Number(sale.toYou || 0).toFixed(2)],
       ['Jahez', Number(sale.jahez || 0).toFixed(2)],
       ['Hunger Station', Number(sale.hungerStation || 0).toFixed(2)],
       ['Keeta', Number(sale.keeta || 0).toFixed(2)],
@@ -650,11 +655,20 @@ export default function Sales() {
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
+            <ShoppingBag className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Jahez</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalJahezAmount.toFixed(2)} SAR</p>
+          </div>
+        </div>
+        <div className="card p-5 flex items-center transition-all hover:shadow-md">
           <div className="p-3 rounded-xl bg-purple-50 text-purple-600 mr-4">
             <Smartphone className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Stc</p>
+            <p className="text-sm font-medium text-slate-500">STC</p>
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalStcAmount.toFixed(2)} SAR</p>
           </div>
         </div>
@@ -672,17 +686,8 @@ export default function Sales() {
             <Smartphone className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">To You</p>
+            <p className="text-sm font-medium text-slate-500">ToYou</p>
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalToYouAmount.toFixed(2)} SAR</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Jahez</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalJahezAmount.toFixed(2)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -695,7 +700,7 @@ export default function Sales() {
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
+          <div className="p-3 rounded-xl bg-rose-50 text-rose-600 mr-4">
             <Zap className="w-6 h-6" />
           </div>
           <div>
@@ -966,35 +971,45 @@ export default function Sales() {
 
               {/* Apps Section */}
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
-                <h3 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Apps</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-                  <div>
-                    <label className="label-text">Stc</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Apps</h3>
+                  <div className="flex items-center gap-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Apps</label>
+                    <div className="text-sm font-bold text-brand-700 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100">
+                      {totalApps.toFixed(2)}
+                    </div>
                   </div>
-                  <div>
-                    <label className="label-text">Wasal</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
+                </div>
+                
+                <div className="grid grid-cols-1 gap-5">
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="label-text flex items-center gap-1.5 min-w-0"><Smartphone className="w-3.5 h-3.5 shrink-0 text-purple-500" /> <span className="truncate">STC</span></label>
+                      <input type="number" step="0.01" className="input-field" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text flex items-center gap-1.5 min-w-0"><Route className="w-3.5 h-3.5 shrink-0 text-blue-500" /> <span className="truncate">Wasal</span></label>
+                      <input type="number" step="0.01" className="input-field" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text flex items-center gap-1.5 min-w-0"><ShoppingBag className="w-3.5 h-3.5 shrink-0 text-pink-500" /> <span className="truncate">ToYou</span></label>
+                      <input type="number" step="0.01" className="input-field" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
+                    </div>
                   </div>
-                  <div>
-                    <label className="label-text">To You</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="label-text">Jahez</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="label-text">Hunger Station</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.hungerStation} onChange={e => setFormData({...formData, hungerStation: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="label-text">Keeta</label>
-                    <input type="number" step="0.01" className="input-field" value={formData.keeta} onChange={e => setFormData({...formData, keeta: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="label-text">Total Apps</label>
-                    <input type="text" readOnly className="input-field bg-slate-100 text-slate-500 border-transparent font-medium" value={totalApps.toFixed(2)} />
+
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="label-text flex items-center gap-1.5 min-w-0"><Utensils className="w-3.5 h-3.5 shrink-0 text-orange-500" /> <span className="truncate">Jahez</span></label>
+                      <input type="number" step="0.01" className="input-field" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text flex items-center gap-1.5 min-w-0"><Coffee className="w-3.5 h-3.5 shrink-0 text-yellow-500" /> <span className="truncate">Hunger Station</span></label>
+                      <input type="number" step="0.01" className="input-field" value={formData.hungerStation} onChange={e => setFormData({...formData, hungerStation: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text flex items-center gap-1.5 min-w-0"><Zap className="w-3.5 h-3.5 shrink-0 text-rose-500" /> <span className="truncate">Keeta</span></label>
+                      <input type="number" step="0.01" className="input-field" value={formData.keeta} onChange={e => setFormData({...formData, keeta: e.target.value})} />
+                    </div>
                   </div>
                 </div>
               </div>

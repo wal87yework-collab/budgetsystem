@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { confirmDelete, confirmUpdate } from '../lib/alerts';
 import { PlusCircle, Edit, Trash2, X, TrendingUp, Download, FileSpreadsheet, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 export default function Expenses() {
   const { user } = useAuth();
+  
   const [expenses, setExpenses] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -25,6 +27,10 @@ export default function Expenses() {
   const [formData, setFormData] = useState(initialFormState);
 
   useEffect(() => {
+    if (user && !user.username.includes('103011')) {
+      setLoading(false);
+      return;
+    }
     const qStores = user?.role === 'store' 
       ? query(collection(db, 'stores'), where('name', '==', user.username))
       : collection(db, 'stores');
@@ -65,6 +71,11 @@ export default function Expenses() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (editingId) {
+      if (!(await confirmUpdate())) return;
+    }
+
     const expenseData = {
       ...formData,
       amount: parseFloat(formData.amount) || 0,
@@ -103,7 +114,7 @@ export default function Expenses() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
+    if (await confirmDelete()) {
       try {
         await deleteDoc(doc(db, 'expenses', id));
       } catch (error) {
@@ -146,6 +157,14 @@ export default function Expenses() {
   }, {} as Record<string, number>);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading expenses...</div>;
+
+  if (user && !user.username.includes('103011')) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        You do not have permission to view Expenses Reports. Only store 103011 - SBY JOUF 2 can access this.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -118,7 +118,15 @@ export default function Layout() {
     { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin'] },
   ];
 
-  const navItems = allNavItems.filter(item => user && item.roles.includes(user.role));
+  const navItems = allNavItems.filter(item => {
+    if (!user || !item.roles.includes(user.role)) return false;
+    
+    if (item.name === 'Expenses') {
+      return user.username.includes('103011');
+    }
+    
+    return true;
+  });
 
   if (user?.role === 'admin') {
     navItems.push({ name: 'Admin', path: '/admin', icon: ShieldAlert, roles: ['admin'] });

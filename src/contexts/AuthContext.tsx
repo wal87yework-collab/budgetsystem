@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     let slug = slugify(username);
     if (username.includes('103011')) {
-      slug = slug + '_v2'; // Bypass any old Firebase Auth account with wrong password that we can't reset
+      slug = slug + '_v3'; // Bypass any old Firebase Auth account with wrong password that we can't reset
     }
     const email = `${slug}@budgetsystem.local`;
     

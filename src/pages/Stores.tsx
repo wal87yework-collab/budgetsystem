@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { confirmDelete, confirmUpdate } from '../lib/alerts';
 import { Store, PlusCircle, Edit, Trash2, X, Download, FileSpreadsheet } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
@@ -56,6 +57,10 @@ export default function Stores() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (editingId) {
+      if (!(await confirmUpdate())) return;
+    }
+
     // Prevent duplicate store names
     if (!editingId) {
       const isDuplicate = stores.some(s => s.name.toLowerCase() === formData.name.trim().toLowerCase());
@@ -102,7 +107,7 @@ export default function Stores() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this store?')) {
+    if (await confirmDelete()) {
       try {
         await deleteDoc(doc(db, 'stores', id));
       } catch (error) {

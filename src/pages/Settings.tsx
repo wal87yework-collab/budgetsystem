@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { confirmDelete, confirmUpdate } from '../lib/alerts';
 import { Settings as SettingsIcon, PlusCircle, Edit, Trash2, Building2, DollarSign, Calculator, Calendar, Download, FileSpreadsheet, Briefcase } from 'lucide-react';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
@@ -40,6 +41,10 @@ export default function Settings() {
     e.preventDefault();
     if (!newSupplierName.trim()) return;
 
+    if (editingSupplierId) {
+      if (!(await confirmUpdate())) return;
+    }
+
     try {
       if (editingSupplierId) {
         await updateDoc(doc(db, 'suppliers', editingSupplierId), {
@@ -69,7 +74,7 @@ export default function Settings() {
   };
 
   const handleDeleteSupplier = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this supplier?')) {
+    if (await confirmDelete('Are you sure you want to delete this supplier?')) {
       try {
         await deleteDoc(doc(db, 'suppliers', id));
       } catch (error) {
@@ -82,6 +87,10 @@ export default function Settings() {
   const handleSaveCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyFormData.name?.trim()) return;
+
+    if (editingCompanyId) {
+      if (!(await confirmUpdate())) return;
+    }
 
     // Prevent duplicate company names
     if (!editingCompanyId) {
@@ -123,7 +132,7 @@ export default function Settings() {
   };
 
   const handleDeleteCompany = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this company?')) {
+    if (await confirmDelete('Are you sure you want to delete this company?')) {
       try {
         await deleteDoc(doc(db, 'companies', id));
       } catch (error) {

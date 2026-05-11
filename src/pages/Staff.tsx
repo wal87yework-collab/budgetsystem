@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { confirmDelete, confirmUpdate } from '../lib/alerts';
 import { PlusCircle, Edit, Trash2, X, Users, Download, FileSpreadsheet } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
@@ -58,6 +59,11 @@ export default function Staff() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (editingId) {
+      if (!(await confirmUpdate())) return;
+    }
+
     const staffData = {
       ...formData,
       iqamaRem: calculateRem(formData.iqamaExpiry),
@@ -101,7 +107,7 @@ export default function Staff() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this staff member?')) {
+    if (await confirmDelete()) {
       try {
         await deleteDoc(doc(db, 'staff', id));
       } catch (error) {

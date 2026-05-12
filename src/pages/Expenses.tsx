@@ -10,6 +10,10 @@ import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 export default function Expenses() {
   const { user } = useAuth();
   
+  const formatCurrency = (amount: number, digits: number = 2) => {
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount || 0);
+  };
+
   const [expenses, setExpenses] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -130,7 +134,7 @@ export default function Expenses() {
   const handleExportPDF = () => {
     const columns = ['Store', 'Date', 'Supplier', 'Amount', 'Notes'];
     const data = filteredExpenses.map(e => [
-      e.storeId, e.date, e.supplier, e.amount?.toFixed(2) || '0.00', e.notes || ''
+      e.storeId, e.date, e.supplier, formatCurrency(e.amount), e.notes || ''
     ]);
     const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
     exportToPDF(`Expenses Report - ${startDate} to ${endDate}`, columns, data, 'portrait', `Store: ${storeNameText}`);
@@ -257,7 +261,7 @@ export default function Expenses() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Total Expenses</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalAmount)} SAR</p>
           </div>
         </div>
         
@@ -287,18 +291,18 @@ export default function Expenses() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-500 truncate" title={supplier}>{supplier}</p>
-                  <p className="text-lg font-bold text-slate-900 font-display mt-0.5">{stats.selected.toFixed(2)} SAR</p>
+                  <p className="text-lg font-bold text-slate-900 font-display mt-0.5">{formatCurrency(stats.selected)} SAR</p>
                 </div>
               </div>
               
               <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
                  <div className="text-left leading-tight">
                     <p className="text-slate-400">This Month</p>
-                    <p className="font-semibold text-slate-700">{stats.thisMonth.toFixed(0)}</p>
+                    <p className="font-semibold text-slate-700">{formatCurrency(stats.thisMonth, 0)}</p>
                  </div>
                  <div className="text-center leading-tight">
                     <p className="text-slate-400">Last Month</p>
-                    <p className="font-semibold text-slate-700">{stats.lastMonth.toFixed(0)}</p>
+                    <p className="font-semibold text-slate-700">{formatCurrency(stats.lastMonth, 0)}</p>
                  </div>
                  <div className="text-right leading-tight min-w-[50px]">
                     <p className="text-slate-400">Change</p>
@@ -334,7 +338,7 @@ export default function Expenses() {
                     <td className="table-cell font-medium">{expense.storeId}</td>
                     <td className="table-cell text-slate-500">{expense.date}</td>
                     <td className="table-cell">{expense.supplier}</td>
-                    <td className="table-cell text-right font-medium text-slate-900">{expense.amount?.toFixed(2) || '0.00'}</td>
+                    <td className="table-cell text-right font-medium text-slate-900">{formatCurrency(expense.amount)}</td>
                     <td className="table-cell text-slate-600">{expense.notes}</td>
                     <td className="table-cell text-center">
                       <div className="flex justify-center gap-3">

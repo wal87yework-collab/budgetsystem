@@ -47,6 +47,11 @@ const PrevYearInput = ({
 
 export default function Sales() {
   const { user } = useAuth();
+  
+  const formatCurrency = (amount: number, digits: number = 2) => {
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount || 0);
+  };
+
   const [sales, setSales] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -624,7 +629,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Total Sales</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalSalesAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalSalesAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -633,7 +638,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Net Sales</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalNetSalesAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalNetSalesAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -642,7 +647,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Total ATMs</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAtmsAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalAtmsAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -651,7 +656,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Total Apps</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalAppsAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalAppsAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -660,7 +665,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Jahez</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalJahezAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalJahezAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -669,7 +674,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">STC</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalStcAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalStcAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -678,7 +683,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Wasal</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalWasalAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalWasalAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -687,7 +692,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">ToYou</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalToYouAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalToYouAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -696,7 +701,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Hunger Station</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalHungerStationAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalHungerStationAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all hover:shadow-md">
@@ -705,7 +710,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Keeta</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{totalKeetaAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalKeetaAmount)} SAR</p>
           </div>
         </div>
         <div className="card p-5 flex items-center transition-all bg-gradient-to-br from-red-500 to-orange-500 shadow-md shadow-red-500/20 border-0 hover:-translate-y-0.5">
@@ -714,7 +719,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm font-medium text-orange-100">Final Cash</p>
-            <p className="text-xl font-bold text-white font-display mt-0.5">{totalCashAmount.toFixed(2)} SAR</p>
+            <p className="text-xl font-bold text-white font-display mt-0.5">{formatCurrency(totalCashAmount)} SAR</p>
           </div>
         </div>
       </div>
@@ -868,9 +873,9 @@ export default function Sales() {
                   <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
                     <td className="table-cell font-medium">{sale.storeId}</td>
                     <td className="table-cell text-slate-500">{sale.date}</td>
-                    <td className="table-cell text-right">{sale.netSales?.toFixed(2) || '0.00'}</td>
-                    <td className="table-cell text-right font-medium text-slate-900">{sale.totalAfterTax?.toFixed(2) || '0.00'}</td>
-                    <td className="table-cell text-right font-medium text-emerald-600">{sale.finalCashSales?.toFixed(2) || '0.00'}</td>
+                    <td className="table-cell text-right">{formatCurrency(sale.netSales)}</td>
+                    <td className="table-cell text-right font-medium text-slate-900">{formatCurrency(sale.totalAfterTax)}</td>
+                    <td className="table-cell text-right font-medium text-emerald-600">{formatCurrency(sale.finalCashSales)}</td>
                     <td className="table-cell text-center">
                       <div className="flex justify-center gap-3">
                         <button onClick={() => handlePrintSingleSale(sale)} className="text-indigo-500 hover:text-indigo-700 transition-colors" title="Print/Export PDF"><Printer className="w-4 h-4" /></button>

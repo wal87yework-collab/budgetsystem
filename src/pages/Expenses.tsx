@@ -177,8 +177,8 @@ export default function Expenses() {
   }, {} as Record<string, { selected: number, thisMonth: number, lastMonth: number }>);
   
   const suppliersToRender = Object.entries(supplierStats)
-    .filter(([_, stats]) => stats.selected > 0 || stats.thisMonth > 0 || stats.lastMonth > 0)
-    .sort((a, b) => b[1].selected - a[1].selected);
+    .filter(([_, stats]: [string, any]) => stats.selected > 0 || stats.thisMonth > 0 || stats.lastMonth > 0)
+    .sort((a: any, b: any) => b[1].selected - a[1].selected);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading expenses...</div>;
 
@@ -265,7 +265,7 @@ export default function Expenses() {
           </div>
         </div>
         
-        {suppliersToRender.map(([supplier, stats], index) => {
+        {suppliersToRender.map(([supplier, stats]: [string, any], index) => {
           const colors = [
             { bg: 'bg-indigo-50', text: 'text-indigo-600' },
             { bg: 'bg-emerald-50', text: 'text-emerald-600' },

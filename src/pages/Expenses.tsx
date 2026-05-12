@@ -18,6 +18,7 @@ export default function Expenses() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [filterStore, setFilterStore] = useState('All');
+  const [filterSupplier, setFilterSupplier] = useState('All');
   const [startDate, setStartDate] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
@@ -122,6 +123,7 @@ export default function Expenses() {
 
   const filteredExpenses = expenses.filter(expense => {
     if (filterStore !== 'All' && expense.storeId !== filterStore) return false;
+    if (filterSupplier !== 'All' && expense.supplier !== filterSupplier) return false;
     return true;
   });
 
@@ -143,11 +145,36 @@ export default function Expenses() {
 
   const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
-  const supplierTotals = filteredExpenses.reduce((acc, exp) => {
+  const currentMonthStr = format(new Date(), 'yyyy-MM');
+  const lastMonthDate = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+  const lastMonthStr = format(lastMonthDate, 'yyyy-MM');
+
+  const supplierStats = expenses.reduce((acc, exp) => {
+    if (filterStore !== 'All' && exp.storeId !== filterStore) return acc;
+    if (filterSupplier !== 'All' && exp.supplier !== filterSupplier) return acc;
+
     const supplier = exp.supplier || 'Unknown';
-    acc[supplier] = (acc[supplier] || 0) + (exp.amount || 0);
+    if (!acc[supplier]) {
+      acc[supplier] = { selected: 0, thisMonth: 0, lastMonth: 0 };
+    }
+
+    if (exp.date && exp.date >= startDate && exp.date <= endDate) {
+      acc[supplier].selected += (exp.amount || 0);
+    }
+
+    const expMonth = exp.date?.substring(0, 7);
+    if (expMonth === currentMonthStr) {
+      acc[supplier].thisMonth += (exp.amount || 0);
+    } else if (expMonth === lastMonthStr) {
+      acc[supplier].lastMonth += (exp.amount || 0);
+    }
+
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, { selected: number, thisMonth: number, lastMonth: number }>);
+  
+  const suppliersToRender = Object.entries(supplierStats)
+    .filter(([_, stats]) => stats.selected > 0 || stats.thisMonth > 0 || stats.lastMonth > 0)
+    .sort((a, b) => b[1].selected - a[1].selected);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading expenses...</div>;
 
@@ -176,6 +203,14 @@ export default function Expenses() {
               {stores.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           )}
+          <select 
+            className="input-field py-1.5 w-auto"
+            value={filterSupplier}
+            onChange={(e) => setFilterSupplier(e.target.value)}
+          >
+            <option value="All">All Suppliers</option>
+            {suppliers.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+          </select>
           <input 
             type="date" 
             className="input-field py-1.5 w-auto"
@@ -226,7 +261,7 @@ export default function Expenses() {
           </div>
         </div>
         
-        {Object.entries(supplierTotals).map(([supplier, amount], index) => {
+        {suppliersToRender.map(([supplier, stats], index) => {
           const colors = [
             { bg: 'bg-indigo-50', text: 'text-indigo-600' },
             { bg: 'bg-emerald-50', text: 'text-emerald-600' },
@@ -240,17 +275,41 @@ export default function Expenses() {
             { bg: 'bg-cyan-50', text: 'text-cyan-600' },
           ];
           const color = colors[index % colors.length];
+          const percentChange = stats.lastMonth > 0 
+            ? ((stats.thisMonth - stats.lastMonth) / stats.lastMonth) * 100 
+            : 0;
+
           return (
-          <div key={supplier} className="card p-5 flex items-center transition-all hover:shadow-md">
-            <div className={`p-3 rounded-xl ${color.bg} ${color.text} mr-4`}>
-              <Receipt className="w-6 h-6" />
+            <div key={supplier} className="card p-5 flex flex-col transition-all hover:shadow-md">
+              <div className="flex items-center mb-4">
+                <div className={`p-3 rounded-xl ${color.bg} ${color.text} mr-4 shrink-0`}>
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-500 truncate" title={supplier}>{supplier}</p>
+                  <p className="text-lg font-bold text-slate-900 font-display mt-0.5">{stats.selected.toFixed(2)} SAR</p>
+                </div>
+              </div>
+              
+              <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                 <div className="text-left leading-tight">
+                    <p className="text-slate-400">This Month</p>
+                    <p className="font-semibold text-slate-700">{stats.thisMonth.toFixed(0)}</p>
+                 </div>
+                 <div className="text-center leading-tight">
+                    <p className="text-slate-400">Last Month</p>
+                    <p className="font-semibold text-slate-700">{stats.lastMonth.toFixed(0)}</p>
+                 </div>
+                 <div className="text-right leading-tight min-w-[50px]">
+                    <p className="text-slate-400">Change</p>
+                    <p className={`font-semibold ${stats.thisMonth > stats.lastMonth ? 'text-rose-500' : stats.thisMonth < stats.lastMonth ? 'text-emerald-500' : 'text-slate-500'}`}>
+                      {stats.thisMonth > stats.lastMonth ? '+' : ''}{percentChange.toFixed(1)}%
+                    </p>
+                 </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500 truncate max-w-[120px]" title={supplier}>{supplier}</p>
-              <p className="text-lg font-bold text-slate-900 font-display mt-0.5">{(amount as number).toFixed(2)} SAR</p>
-            </div>
-          </div>
-        )})}
+          );
+        })}
       </div>
 
       <div className="card">

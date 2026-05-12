@@ -18,8 +18,8 @@ export default function Expenses() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [filterStore, setFilterStore] = useState('All');
-  const [filterMonth, setFilterMonth] = useState(format(new Date(), 'MM'));
-  const [filterYear, setFilterYear] = useState(format(new Date(), 'yyyy'));
+  const [startDate, setStartDate] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const initialFormState = {
     storeId: '', date: '', supplier: '', amount: '', notes: ''
@@ -46,9 +46,6 @@ export default function Expenses() {
       setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const yearStart = `${filterYear}-01-01`;
-    const yearEnd = `${filterYear}-12-31`;
-
     let baseQuery: any = collection(db, 'expenses');
     if (user?.role === 'store') {
       baseQuery = query(collection(db, 'expenses'), where('storeId', '==', user.username));
@@ -56,8 +53,8 @@ export default function Expenses() {
 
     const qExpenses = query(
       baseQuery,
-      where('date', '>=', yearStart),
-      where('date', '<=', yearEnd)
+      where('date', '>=', startDate),
+      where('date', '<=', endDate)
     );
     const unsubExpenses = onSnapshot(qExpenses, (snapshot: any) => {
       const expensesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
@@ -67,7 +64,7 @@ export default function Expenses() {
     });
 
     return () => { unsubStores(); unsubSuppliers(); unsubExpenses(); };
-  }, [user, filterYear]);
+  }, [user, startDate, endDate]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +122,6 @@ export default function Expenses() {
 
   const filteredExpenses = expenses.filter(expense => {
     if (filterStore !== 'All' && expense.storeId !== filterStore) return false;
-    if (expense.date) {
-      const [y, m] = expense.date.split('-');
-      if (y !== filterYear || m !== filterMonth) return false;
-    }
     return true;
   });
 
@@ -138,14 +131,14 @@ export default function Expenses() {
       e.storeId, e.date, e.supplier, e.amount?.toFixed(2) || '0.00', e.notes || ''
     ]);
     const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
-    exportToPDF(`Expenses Report - ${filterMonth}-${filterYear}`, columns, data, 'portrait', `Store: ${storeNameText}`);
+    exportToPDF(`Expenses Report - ${startDate} to ${endDate}`, columns, data, 'portrait', `Store: ${storeNameText}`);
   };
 
   const handleExportExcel = () => {
     const data = filteredExpenses.map(e => ({
       Store: e.storeId, Date: e.date, Supplier: e.supplier, Amount: e.amount, Notes: e.notes
     }));
-    exportToExcel(`Expenses Report - ${filterMonth}-${filterYear}`, data);
+    exportToExcel(`Expenses Report - ${startDate} to ${endDate}`, data);
   };
 
   const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
@@ -183,24 +176,19 @@ export default function Expenses() {
               {stores.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           )}
-          <select 
+          <input 
+            type="date" 
             className="input-field py-1.5 w-auto"
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-          >
-            <option value="01">01</option><option value="02">02</option><option value="03">03</option>
-            <option value="04">04</option><option value="05">05</option><option value="06">06</option>
-            <option value="07">07</option><option value="08">08</option><option value="09">09</option>
-            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
-          </select>
-          <select 
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <span className="text-slate-500 font-medium text-sm">to</span>
+          <input 
+            type="date" 
             className="input-field py-1.5 w-auto"
-            value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value)}
-          >
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-          </select>
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
           
           <div className="flex gap-2 border-l border-slate-200 pl-3 ml-1">
             <button onClick={handleExportPDF} className="btn-secondary py-1.5 px-3" title="Export PDF">
@@ -238,9 +226,23 @@ export default function Expenses() {
           </div>
         </div>
         
-        {Object.entries(supplierTotals).map(([supplier, amount]) => (
+        {Object.entries(supplierTotals).map(([supplier, amount], index) => {
+          const colors = [
+            { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+            { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+            { bg: 'bg-amber-50', text: 'text-amber-600' },
+            { bg: 'bg-fuchsia-50', text: 'text-fuchsia-600' },
+            { bg: 'bg-blue-50', text: 'text-blue-600' },
+            { bg: 'bg-rose-50', text: 'text-rose-600' },
+            { bg: 'bg-teal-50', text: 'text-teal-600' },
+            { bg: 'bg-violet-50', text: 'text-violet-600' },
+            { bg: 'bg-orange-50', text: 'text-orange-600' },
+            { bg: 'bg-cyan-50', text: 'text-cyan-600' },
+          ];
+          const color = colors[index % colors.length];
+          return (
           <div key={supplier} className="card p-5 flex items-center transition-all hover:shadow-md">
-            <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600 mr-4">
+            <div className={`p-3 rounded-xl ${color.bg} ${color.text} mr-4`}>
               <Receipt className="w-6 h-6" />
             </div>
             <div>
@@ -248,7 +250,7 @@ export default function Expenses() {
               <p className="text-lg font-bold text-slate-900 font-display mt-0.5">{(amount as number).toFixed(2)} SAR</p>
             </div>
           </div>
-        ))}
+        )})}
       </div>
 
       <div className="card">

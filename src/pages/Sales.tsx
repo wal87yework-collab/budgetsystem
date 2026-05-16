@@ -60,8 +60,9 @@ export default function Sales() {
   
   // Filters
   const [filterStore, setFilterStore] = useState('All');
-  const [filterMonth, setFilterMonth] = useState(format(new Date(), 'MM'));
-  const [filterYear, setFilterYear] = useState(format(new Date(), 'yyyy'));
+  const [startDate, setStartDate] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const filterYear = startDate ? startDate.split('-')[0] : format(new Date(), 'yyyy');
 
   // Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -248,8 +249,7 @@ export default function Sales() {
   const filteredSales = sales.filter(sale => {
     if (filterStore !== 'All' && sale.storeId !== filterStore) return false;
     if (sale.date) {
-      const [y, m] = sale.date.split('-');
-      if (y !== filterYear || m !== filterMonth) return false;
+      if (sale.date < startDate || sale.date > endDate) return false;
     }
     return true;
   });
@@ -320,12 +320,12 @@ export default function Sales() {
   const handleExportPDF = () => {
     const data = filteredSales.map(mapSaleToRow);
     const storeNameText = user?.role === 'store' ? user.username : (filterStore === 'All' ? 'All Stores' : filterStore);
-    exportToPDF(`Sales Report - ${filterMonth}-${filterYear}`, salesColumns, data, 'landscape', `Store: ${storeNameText}`);
+    exportToPDF(`Sales Report - ${startDate} to ${endDate}`, salesColumns, data, 'landscape', `Store: ${storeNameText}`);
   };
 
   const handleExportExcel = () => {
     const data = filteredSales.map(mapSaleToExcel);
-    exportToExcel(`Sales Report - ${filterMonth}-${filterYear}`, data);
+    exportToExcel(`Sales Report - ${startDate} to ${endDate}`, data);
   };
 
   const handlePrintSingleSale = (sale: any) => {
@@ -510,6 +510,8 @@ export default function Sales() {
   const totalHungerStationAmount = filteredSales.reduce((sum, sale) => sum + (sale.hungerStation || 0), 0);
   const totalKeetaAmount = filteredSales.reduce((sum, sale) => sum + (sale.keeta || 0), 0);
   const totalCashAmount = filteredSales.reduce((sum, sale) => sum + (sale.finalCashSales || 0), 0);
+  const totalUsedAmount = filteredSales.reduce((sum, sale) => sum + (sale.used || 0), 0);
+  const totalCashSalesOfDayAmount = filteredSales.reduce((sum, sale) => sum + (sale.cashSalesOfDay || 0), 0);
 
   const chartData = filteredSales.slice(0, 10).reverse().map(sale => ({
     name: sale.date ? format(parseISO(sale.date), 'dd MMM') : 'Unknown',
@@ -574,24 +576,19 @@ export default function Sales() {
               {stores.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           )}
-          <select 
+          <input 
+            type="date" 
             className="input-field py-1.5 w-auto"
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-          >
-            <option value="01">01</option><option value="02">02</option><option value="03">03</option>
-            <option value="04">04</option><option value="05">05</option><option value="06">06</option>
-            <option value="07">07</option><option value="08">08</option><option value="09">09</option>
-            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
-          </select>
-          <select 
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <span className="text-slate-500 font-medium text-sm">to</span>
+          <input 
+            type="date" 
             className="input-field py-1.5 w-auto"
-            value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value)}
-          >
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-          </select>
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
           
           <div className="flex gap-2 border-l border-slate-200 pl-3 ml-1">
             <button onClick={() => setIsReportModalOpen(true)} className="btn-secondary py-1.5 px-3 whitespace-nowrap" title="Date to Date Report">
@@ -713,13 +710,29 @@ export default function Sales() {
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalKeetaAmount)} SAR</p>
           </div>
         </div>
-        <div className="card p-5 flex items-center transition-all bg-gradient-to-br from-red-500 to-orange-500 shadow-md shadow-red-500/20 border-0 hover:-translate-y-0.5">
-          <div className="p-3 rounded-xl bg-white/20 text-white mr-4 backdrop-blur-sm shadow-inner">
-            <TrendingUp className="w-6 h-6" />
+        <div className="card p-5 flex flex-col transition-all bg-gradient-to-br from-red-500 to-orange-500 shadow-md shadow-red-500/20 border-0 hover:-translate-y-0.5 sm:col-span-2 lg:col-span-3">
+          <div className="flex items-center mb-3">
+            <div className="p-3 rounded-xl bg-white/20 text-white mr-4 backdrop-blur-sm shadow-inner shrink-0">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-orange-100">Final Cash</p>
+              <p className="text-2xl font-bold text-white font-display mt-0.5">{formatCurrency(totalCashAmount)} SAR</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-orange-100">Final Cash</p>
-            <p className="text-xl font-bold text-white font-display mt-0.5">{formatCurrency(totalCashAmount)} SAR</p>
+          <div className="mt-auto pt-3 border-t border-white/20 flex justify-between items-center text-sm">
+             <div className="text-left leading-tight">
+                <p className="text-orange-200 text-xs">Cash Sales Of Day</p>
+                <p className="font-semibold text-white mt-0.5">{formatCurrency(totalCashSalesOfDayAmount)}</p>
+             </div>
+             <div className="text-center leading-tight">
+                <p className="text-orange-200 text-xs text-center">Used</p>
+                <p className="font-semibold text-white mt-0.5">{formatCurrency(totalUsedAmount)}</p>
+             </div>
+             <div className="text-right leading-tight">
+                <p className="text-orange-200 text-xs text-right">Remaining</p>
+                <p className="font-semibold text-white mt-0.5">{formatCurrency(totalCashAmount)}</p>
+             </div>
           </div>
         </div>
       </div>

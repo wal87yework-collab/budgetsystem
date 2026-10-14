@@ -49,5 +49,13 @@ service cloud.firestore {
     match /annual_targets/{targetId} {
       allow read, write: if isAuthenticated();
     }
+
+    match /budgets/{budgetId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /sales_apps/{appId} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }

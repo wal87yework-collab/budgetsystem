@@ -167,6 +167,35 @@
         }
       },
       "required": ["name"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "A budget and purchases tracking row for a store.",
+      "type": "object",
+      "properties": {
+        "storeNumber": {
+          "type": "string"
+        },
+        "locationName": {
+          "type": "string"
+        },
+        "currentBudget": {
+          "type": "number"
+        },
+        "currentPurchase": {
+          "type": "number"
+        },
+        "leftBudget": {
+          "type": "number"
+        },
+        "section": {
+          "type": "number"
+        },
+        "sequence": {
+          "type": "number"
+        }
+      },
+      "required": ["storeNumber", "locationName", "currentBudget", "currentPurchase", "leftBudget", "section"]
     }
   },
   "firestore": {
@@ -197,6 +226,10 @@
     "/suppliers/{supplierId}": {
       "schema": "Supplier",
       "description": "Suppliers."
+    },
+    "/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "Budget entries for Pepsi tracker (with 15% VAT)."
     }
   }
 }

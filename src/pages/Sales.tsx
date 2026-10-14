@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { confirmDelete, confirmUpdate } from '../lib/alerts';
-import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange, ShoppingBag, Bike, Zap, Route, Utensils, Store, Coffee } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, X, TrendingUp, DollarSign, CreditCard, Smartphone, Download, FileSpreadsheet, Printer, CalendarRange, ShoppingBag, Bike, Zap, Route, Utensils, Store, Coffee, EyeOff, Settings as SettingsIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { 
+  SalesApp, 
+  ensureDefaultSalesApps, 
+  getSaleAppAmount, 
+  calculateSaleTotalApps, 
+  getAppColorClasses 
+} from '../lib/salesApps';
+import { renderAppIcon } from '../components/SalesAppsManager';
 
 const PrevYearInput = ({ 
   initialValue, 
@@ -54,6 +63,8 @@ export default function Sales() {
 
   const [sales, setSales] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
+  const [salesApps, setSalesApps] = useState<SalesApp[]>([]);
+  const [appValues, setAppValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -72,12 +83,29 @@ export default function Sales() {
 
   const initialFormState = {
     storeId: '', date: '', netSales: '', mastercard: '', span: '', visa: '',
-    stc: '', wasal: '', toYou: '', jahez: '', hungerStation: '', keeta: '',
     advance: '', used: '', bankReceive: '', notes: ''
   };
   const [formData, setFormData] = useState(initialFormState);
 
+  // Active vs historical apps
+  const activeApps = useMemo(() => salesApps.filter(a => a.status === 'active'), [salesApps]);
+  const historicalAppsWithValues = useMemo(() => {
+    return salesApps.filter(a => a.status !== 'active' && Boolean(appValues[a.key] && parseFloat(appValues[a.key]) > 0));
+  }, [salesApps, appValues]);
+
   useEffect(() => {
+    // Ensure default apps
+    ensureDefaultSalesApps();
+
+    // Fetch Sales Apps
+    const unsubApps = onSnapshot(collection(db, 'sales_apps'), (snapshot) => {
+      const list: SalesApp[] = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
+      list.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99) || a.name.localeCompare(b.name));
+      setSalesApps(list);
+    }, (err) => {
+      console.warn("Sales apps snapshot error:", err);
+    });
+
     // Fetch Stores
     const qStores = user?.role === 'store' 
       ? query(collection(db, 'stores'), where('name', '==', user.username))
@@ -115,6 +143,7 @@ export default function Sales() {
     });
 
     return () => {
+      unsubApps();
       unsubStores();
       unsubSales();
     };
@@ -148,13 +177,15 @@ export default function Sales() {
   const visa = parseNum(formData.visa);
   const totalAtms = mastercard + span + visa;
   
-  const stc = parseNum(formData.stc);
-  const wasal = parseNum(formData.wasal);
-  const toYou = parseNum(formData.toYou);
-  const jahez = parseNum(formData.jahez);
-  const hungerStation = parseNum(formData.hungerStation);
-  const keeta = parseNum(formData.keeta);
-  const totalApps = stc + wasal + toYou + jahez + hungerStation + keeta;
+  // Total Apps Calculation from appValues
+  const totalApps = useMemo(() => {
+    let sum = 0;
+    Object.values(appValues).forEach((v) => {
+      const parsed = parseFloat(String(v));
+      if (!isNaN(parsed)) sum += parsed;
+    });
+    return sum;
+  }, [appValues]);
   
   const royaltyFee = netSales * 0.08;
   const marketingFee = netSales * 0.045;
@@ -184,13 +215,38 @@ export default function Sales() {
       }
     }
 
+    // Compile dynamic app amounts
+    const appAmountsMap: Record<string, number> = {};
+    salesApps.forEach(app => {
+      const val = parseFloat(String(appValues[app.key] || ''));
+      appAmountsMap[app.key] = !isNaN(val) ? val : 0;
+    });
+    Object.entries(appValues).forEach(([k, v]) => {
+      const parsed = parseFloat(String(v));
+      if (!isNaN(parsed) && !(k in appAmountsMap)) {
+        appAmountsMap[k] = parsed;
+      }
+    });
+
+    // Backward-compatible individual fields
+    const stc = appAmountsMap['stc'] || 0;
+    const wasal = appAmountsMap['wasal'] || 0;
+    const toYou = appAmountsMap['toYou'] || 0;
+    const jahez = appAmountsMap['jahez'] || 0;
+    const hungerStation = appAmountsMap['hungerStation'] || 0;
+    const keeta = appAmountsMap['keeta'] || 0;
+
     const saleData = {
       ...formData,
+      ...appAmountsMap,
+      stc, wasal, toYou, jahez, hungerStation, keeta,
+      appValues: appAmountsMap,
+      totalApps,
       netSales, tax, totalAfterTax, mastercard, span, visa, totalAtms,
-      stc, wasal, toYou, jahez, hungerStation, keeta, totalApps,
       royaltyFee, marketingFee, totalFees,
       cashSalesOfDay, advance, used, bankReceive, finalCashSales,
-      createdAt: new Date().toISOString()
+      createdAt: editingId ? (sales.find(s => s.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     // Force storeId if user is a store
@@ -206,6 +262,7 @@ export default function Sales() {
       }
       setIsModalOpen(false);
       setFormData(initialFormState);
+      setAppValues({});
       setEditingId(null);
     } catch (error) {
       console.error("Error saving sale:", error);
@@ -221,17 +278,28 @@ export default function Sales() {
       mastercard: sale.mastercard?.toString() || '',
       span: sale.span?.toString() || '',
       visa: sale.visa?.toString() || '',
-      stc: sale.stc?.toString() || '',
-      wasal: sale.wasal?.toString() || '',
-      toYou: sale.toYou?.toString() || '',
-      jahez: sale.jahez?.toString() || '',
-      hungerStation: sale.hungerStation?.toString() || '',
-      keeta: sale.keeta?.toString() || '',
       advance: sale.advance?.toString() || '',
       used: sale.used?.toString() || '',
       bankReceive: sale.bankReceive?.toString() || '',
       notes: sale.notes || ''
     });
+
+    // Populate appValues
+    const initialApps: Record<string, string> = {};
+    salesApps.forEach(app => {
+      const amt = getSaleAppAmount(sale, app.key);
+      if (amt > 0) initialApps[app.key] = amt.toString();
+    });
+    ['stc', 'wasal', 'toYou', 'jahez', 'hungerStation', 'keeta'].forEach(k => {
+      if (sale[k] && !initialApps[k]) initialApps[k] = sale[k].toString();
+    });
+    if (sale.appValues && typeof sale.appValues === 'object') {
+      Object.entries(sale.appValues).forEach(([k, v]) => {
+        if (v && !initialApps[k]) initialApps[k] = String(v);
+      });
+    }
+    setAppValues(initialApps);
+
     setEditingId(sale.id);
     setIsModalOpen(true);
   };
@@ -254,10 +322,27 @@ export default function Sales() {
     return true;
   });
 
+  // Apps to display in reports & exports
+  const appsForExport = useMemo(() => {
+    const keysPresent = new Set<string>();
+    filteredSales.forEach(s => {
+      salesApps.forEach(a => {
+        if (getSaleAppAmount(s, a.key) > 0) keysPresent.add(a.key);
+      });
+      if (s.appValues && typeof s.appValues === 'object') {
+        Object.keys(s.appValues).forEach(k => {
+          if (parseFloat(s.appValues[k]) > 0) keysPresent.add(k);
+        });
+      }
+    });
+    return salesApps.filter(a => a.status === 'active' || keysPresent.has(a.key));
+  }, [salesApps, filteredSales]);
+
   const salesColumns = [
     'Store', 'Date', 'Net Sales', 'Tax', 'Total w/ Tax', 
     'Mastercard', 'Span', 'Visa', 'Total ATMs', 
-    'STC', 'Wasal', 'ToYou', 'Jahez', 'HungerSt.', 'Keeta', 'Total Apps', 
+    ...appsForExport.map(a => a.name),
+    'Total Apps', 
     'Royalty', 'Marketing', 'Total Fees', 
     'Advance', 'Used', 'Cash Sales', 'Final Cash', 'Notes'
   ];
@@ -272,13 +357,8 @@ export default function Sales() {
     s.span?.toFixed(2) || '0.00', 
     s.visa?.toFixed(2) || '0.00', 
     s.totalAtms?.toFixed(2) || '0.00',
-    s.stc?.toFixed(2) || '0.00',
-    s.wasal?.toFixed(2) || '0.00',
-    s.toYou?.toFixed(2) || '0.00',
-    s.jahez?.toFixed(2) || '0.00', 
-    s.hungerStation?.toFixed(2) || '0.00', 
-    s.keeta?.toFixed(2) || '0.00',
-    s.totalApps?.toFixed(2) || '0.00',
+    ...appsForExport.map(a => getSaleAppAmount(s, a.key).toFixed(2)),
+    calculateSaleTotalApps(s, salesApps).toFixed(2),
     s.royaltyFee?.toFixed(2) || '0.00', 
     s.marketingFee?.toFixed(2) || '0.00', 
     s.totalFees?.toFixed(2) || '0.00',
@@ -289,33 +369,33 @@ export default function Sales() {
     s.notes || ''
   ];
 
-  const mapSaleToExcel = (s: any) => ({
-    'Store': s.storeId || '', 
-    'Date': s.date || '', 
-    'Net Sales': s.netSales || 0, 
-    'Tax': s.tax || 0, 
-    'Total After Tax': s.totalAfterTax || 0,
-    'Mastercard': s.mastercard || 0, 
-    'Span': s.span || 0, 
-    'Visa': s.visa || 0, 
-    'Total ATMs': s.totalAtms || 0,
-    'STC': s.stc || 0,
-    'Wasal': s.wasal || 0,
-    'ToYou': s.toYou || 0,
-    'Jahez': s.jahez || 0, 
-    'Hunger Station': s.hungerStation || 0, 
-    'Keeta': s.keeta || 0,
-    'Total Apps': s.totalApps || 0,
-    'Royalty Fee': s.royaltyFee || 0, 
-    'Marketing Fee': s.marketingFee || 0, 
-    'Total Fees': s.totalFees || 0,
-    'Advance': s.advance || 0, 
-    'Used': s.used || 0, 
-    'Bank Receive': s.bankReceive || 0,
-    'Cash Sales Of Day': s.cashSalesOfDay || 0, 
-    'Final Cash Sales': s.finalCashSales || 0, 
-    'Notes': s.notes || ''
-  });
+  const mapSaleToExcel = (s: any) => {
+    const row: Record<string, any> = {
+      'Store': s.storeId || '', 
+      'Date': s.date || '', 
+      'Net Sales': s.netSales || 0, 
+      'Tax': s.tax || 0, 
+      'Total After Tax': s.totalAfterTax || 0,
+      'Mastercard': s.mastercard || 0, 
+      'Span': s.span || 0, 
+      'Visa': s.visa || 0, 
+      'Total ATMs': s.totalAtms || 0,
+    };
+    appsForExport.forEach(a => {
+      row[a.name] = getSaleAppAmount(s, a.key);
+    });
+    row['Total Apps'] = calculateSaleTotalApps(s, salesApps);
+    row['Royalty Fee'] = s.royaltyFee || 0;
+    row['Marketing Fee'] = s.marketingFee || 0;
+    row['Total Fees'] = s.totalFees || 0;
+    row['Advance'] = s.advance || 0;
+    row['Used'] = s.used || 0;
+    row['Bank Receive'] = s.bankReceive || 0;
+    row['Cash Sales Of Day'] = s.cashSalesOfDay || 0;
+    row['Final Cash Sales'] = s.finalCashSales || 0;
+    row['Notes'] = s.notes || '';
+    return row;
+  };
 
   const handleExportPDF = () => {
     const data = filteredSales.map(mapSaleToRow);
@@ -343,6 +423,17 @@ export default function Sales() {
     doc.text(`Store: ${sale.storeId || 'N/A'}`, 14, 24);
     doc.text(`Date: ${sale.date || 'N/A'}`, 14, 30);
 
+    const appRows: any[] = [];
+    salesApps.forEach(app => {
+      const amt = getSaleAppAmount(sale, app.key);
+      if (amt > 0 || app.status === 'active') {
+        appRows.push([app.name, Number(amt).toFixed(2)]);
+      }
+    });
+    if (appRows.length === 0) {
+      appRows.push(['Apps Sales', '0.00']);
+    }
+
     const tableBody: any[] = [
       [{ content: 'SALES', colSpan: 2, styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } }],
       ['Net Sales', Number(sale.netSales || 0).toFixed(2)],
@@ -355,14 +446,9 @@ export default function Sales() {
       ['Visa', Number(sale.visa || 0).toFixed(2)],
       [{ content: 'Total ATMs', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalAtms || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
 
-      [{ content: 'APPS', colSpan: 2, styles: { halign: 'center', fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' } }],
-      ['STC', Number(sale.stc || 0).toFixed(2)],
-      ['Wasal', Number(sale.wasal || 0).toFixed(2)],
-      ['ToYou', Number(sale.toYou || 0).toFixed(2)],
-      ['Jahez', Number(sale.jahez || 0).toFixed(2)],
-      ['Hunger Station', Number(sale.hungerStation || 0).toFixed(2)],
-      ['Keeta', Number(sale.keeta || 0).toFixed(2)],
-      [{ content: 'Total Apps', styles: { fontStyle: 'bold' } }, { content: Number(sale.totalApps || 0).toFixed(2), styles: { fontStyle: 'bold' } }],
+      [{ content: 'DELIVERY & ONLINE APPS', colSpan: 2, styles: { halign: 'center', fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' } }],
+      ...appRows,
+      [{ content: 'Total Apps', styles: { fontStyle: 'bold' } }, { content: Number(calculateSaleTotalApps(sale, salesApps)).toFixed(2), styles: { fontStyle: 'bold' } }],
 
       [{ content: 'ROYALTY & MARKETING FEES', colSpan: 2, styles: { halign: 'center', fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' } }],
       ['Royalty Fee (8%)', Number(sale.royaltyFee || 0).toFixed(2)],
@@ -502,16 +588,18 @@ export default function Sales() {
   const totalSalesAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalAfterTax || 0), 0);
   const totalNetSalesAmount = filteredSales.reduce((sum, sale) => sum + (sale.netSales || 0), 0);
   const totalAtmsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalAtms || 0), 0);
-  const totalAppsAmount = filteredSales.reduce((sum, sale) => sum + (sale.totalApps || 0), 0);
-  const totalStcAmount = filteredSales.reduce((sum, sale) => sum + (sale.stc || 0), 0);
-  const totalWasalAmount = filteredSales.reduce((sum, sale) => sum + (sale.wasal || 0), 0);
-  const totalToYouAmount = filteredSales.reduce((sum, sale) => sum + (sale.toYou || 0), 0);
-  const totalJahezAmount = filteredSales.reduce((sum, sale) => sum + (sale.jahez || 0), 0);
-  const totalHungerStationAmount = filteredSales.reduce((sum, sale) => sum + (sale.hungerStation || 0), 0);
-  const totalKeetaAmount = filteredSales.reduce((sum, sale) => sum + (sale.keeta || 0), 0);
+  const totalAppsAmount = filteredSales.reduce((sum, sale) => sum + calculateSaleTotalApps(sale, salesApps), 0);
   const totalCashAmount = filteredSales.reduce((sum, sale) => sum + (sale.finalCashSales || 0), 0);
   const totalUsedAmount = filteredSales.reduce((sum, sale) => sum + (sale.used || 0), 0);
   const totalCashSalesOfDayAmount = filteredSales.reduce((sum, sale) => sum + (sale.cashSalesOfDay || 0), 0);
+
+  const appTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    salesApps.forEach(app => {
+      totals[app.key] = filteredSales.reduce((sum, sale) => sum + getSaleAppAmount(sale, app.key), 0);
+    });
+    return totals;
+  }, [salesApps, filteredSales]);
 
   const chartData = filteredSales.slice(0, 10).reverse().map(sale => ({
     name: sale.date ? format(parseISO(sale.date), 'dd MMM') : 'Unknown',
@@ -656,60 +744,21 @@ export default function Sales() {
             <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalAppsAmount)} SAR</p>
           </div>
         </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-orange-50 text-orange-600 mr-4">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Jahez</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalJahezAmount)} SAR</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 mr-4">
-            <Smartphone className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">STC</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalStcAmount)} SAR</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 mr-4">
-            <Smartphone className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Wasal</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalWasalAmount)} SAR</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-pink-50 text-pink-600 mr-4">
-            <Smartphone className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">ToYou</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalToYouAmount)} SAR</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-yellow-50 text-yellow-600 mr-4">
-            <Bike className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Hunger Station</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalHungerStationAmount)} SAR</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-rose-50 text-rose-600 mr-4">
-            <Zap className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Keeta</p>
-            <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalKeetaAmount)} SAR</p>
-          </div>
-        </div>
+        {activeApps.map(app => {
+          const colorClasses = getAppColorClasses(app.color);
+          const totalVal = appTotals[app.key] || 0;
+          return (
+            <div key={app.id} className="card p-5 flex items-center transition-all hover:shadow-md">
+              <div className={`p-3 rounded-xl mr-4 ${colorClasses.bgLight} ${colorClasses.text} border ${colorClasses.border}`}>
+                {renderAppIcon(app.icon, 'w-6 h-6')}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-500 truncate">{app.name}</p>
+                <p className="text-xl font-bold text-slate-900 font-display mt-0.5">{formatCurrency(totalVal)} SAR</p>
+              </div>
+            </div>
+          );
+        })}
         <div className="card p-5 flex flex-col transition-all bg-gradient-to-br from-red-500 to-orange-500 shadow-md shadow-red-500/20 border-0 hover:-translate-y-0.5 sm:col-span-2 lg:col-span-3">
           <div className="flex items-center mb-3">
             <div className="p-3 rounded-xl bg-white/20 text-white mr-4 backdrop-blur-sm shadow-inner shrink-0">
@@ -989,8 +1038,20 @@ export default function Sales() {
 
               {/* Apps Section */}
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Apps</h3>
+                <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Delivery & Online Apps</h3>
+                    {user?.role === 'admin' && (
+                      <Link 
+                        to="/settings?tab=apps" 
+                        className="text-xs text-amber-600 hover:text-amber-800 flex items-center gap-1 font-medium underline underline-offset-2 ml-1"
+                        title="Manage active/hidden/disabled apps in Settings (Admin only)"
+                      >
+                        <SettingsIcon className="w-3 h-3" />
+                        <span>Manage Apps</span>
+                      </Link>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Apps</label>
                     <div className="text-sm font-bold text-brand-700 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100">
@@ -999,37 +1060,66 @@ export default function Sales() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-5">
-                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="label-text flex items-center gap-1.5 min-w-0"><Smartphone className="w-3.5 h-3.5 shrink-0 text-purple-500" /> <span className="truncate">STC</span></label>
-                      <input type="number" step="0.01" className="input-field" value={formData.stc} onChange={e => setFormData({...formData, stc: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="label-text flex items-center gap-1.5 min-w-0"><Route className="w-3.5 h-3.5 shrink-0 text-blue-500" /> <span className="truncate">Wasal</span></label>
-                      <input type="number" step="0.01" className="input-field" value={formData.wasal} onChange={e => setFormData({...formData, wasal: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="label-text flex items-center gap-1.5 min-w-0"><ShoppingBag className="w-3.5 h-3.5 shrink-0 text-pink-500" /> <span className="truncate">ToYou</span></label>
-                      <input type="number" step="0.01" className="input-field" value={formData.toYou} onChange={e => setFormData({...formData, toYou: e.target.value})} />
-                    </div>
+                {/* Active Apps Entry Fields */}
+                {activeApps.length === 0 ? (
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-500">
+                    No active delivery apps found.{user?.role === 'admin' ? (
+                      <> You can configure and activate apps in <Link to="/settings?tab=apps" className="text-brand-600 underline font-medium">Settings</Link>.</>
+                    ) : (
+                      ' Please contact an administrator to configure active apps.'
+                    )}
                   </div>
+                ) : (
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {activeApps.map(app => {
+                      const colorClasses = getAppColorClasses(app.color);
+                      return (
+                        <div key={app.id}>
+                          <label className="label-text flex items-center gap-1.5 min-w-0">
+                            <span className={colorClasses.text}>{renderAppIcon(app.icon, 'w-3.5 h-3.5 shrink-0')}</span>
+                            <span className="truncate">{app.name}</span>
+                          </label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            placeholder="0.00"
+                            className="input-field" 
+                            value={appValues[app.key] || ''} 
+                            onChange={e => setAppValues({ ...appValues, [app.key]: e.target.value })} 
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="label-text flex items-center gap-1.5 min-w-0"><Utensils className="w-3.5 h-3.5 shrink-0 text-orange-500" /> <span className="truncate">Jahez</span></label>
-                      <input type="number" step="0.01" className="input-field" value={formData.jahez} onChange={e => setFormData({...formData, jahez: e.target.value})} />
+                {/* Historical Apps preserved from past record */}
+                {historicalAppsWithValues.length > 0 && (
+                  <div className="mt-4 p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
+                      <EyeOff className="w-4 h-4 text-amber-600" />
+                      <span>Historical / Inactive Apps Recorded in This Entry</span>
                     </div>
-                    <div>
-                      <label className="label-text flex items-center gap-1.5 min-w-0"><Coffee className="w-3.5 h-3.5 shrink-0 text-yellow-500" /> <span className="truncate">Hunger Station</span></label>
-                      <input type="number" step="0.01" className="input-field" value={formData.hungerStation} onChange={e => setFormData({...formData, hungerStation: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="label-text flex items-center gap-1.5 min-w-0"><Zap className="w-3.5 h-3.5 shrink-0 text-rose-500" /> <span className="truncate">Keeta</span></label>
-                      <input type="number" step="0.01" className="input-field" value={formData.keeta} onChange={e => setFormData({...formData, keeta: e.target.value})} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {historicalAppsWithValues.map(app => (
+                        <div key={app.id}>
+                          <label className="label-text flex items-center gap-1.5 text-amber-900">
+                            {renderAppIcon(app.icon, 'w-3.5 h-3.5 text-amber-600')}
+                            <span className="truncate">{app.name} ({app.status})</span>
+                          </label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            placeholder="0.00"
+                            className="input-field bg-white" 
+                            value={appValues[app.key] || ''} 
+                            onChange={e => setAppValues({ ...appValues, [app.key]: e.target.value })} 
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Fees & Petty Cash Row */}

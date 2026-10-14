@@ -1,5 +1,6 @@
 {
   "name": "BudgetSystem",
   "description": "Store management system for tracking sales, expenses, staff, and schedules.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

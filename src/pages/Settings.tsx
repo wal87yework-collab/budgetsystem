@@ -1,11 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { confirmDelete, confirmUpdate } from '../lib/alerts';
-import { Settings as SettingsIcon, PlusCircle, Edit, Trash2, Building2, DollarSign, Calculator, Calendar, Download, FileSpreadsheet, Briefcase } from 'lucide-react';
+import { 
+  Settings as SettingsIcon, 
+  PlusCircle, 
+  Edit, 
+  Trash2, 
+  Building2, 
+  Download, 
+  FileSpreadsheet, 
+  Briefcase, 
+  Smartphone,
+  Layers,
+  ShieldAlert
+} from 'lucide-react';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
+import SalesAppsManager from '../components/SalesAppsManager';
 
 export default function Settings() {
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'apps';
+  const [activeTab, setActiveTab] = useState<'apps' | 'companies' | 'suppliers' | 'all'>(
+    (initialTab as any) || 'apps'
+  );
+
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,13 +43,30 @@ export default function Settings() {
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['apps', 'companies', 'suppliers', 'all'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl as any);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: 'apps' | 'companies' | 'suppliers' | 'all') => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'all' ? {} : { tab });
+  };
+
+  useEffect(() => {
     const unsubSuppliers = onSnapshot(collection(db, 'suppliers'), (snapshot) => {
       setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (err) => {
+      console.warn("Suppliers Firestore query failed (offline):", err);
       setLoading(false);
     });
 
     const unsubCompanies = onSnapshot(collection(db, 'companies'), (snapshot) => {
       setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("Companies Firestore query failed (offline):", err);
     });
 
     return () => {
@@ -93,12 +132,12 @@ export default function Settings() {
     }
 
     // Prevent duplicate company names
-    if (!editingCompanyId) {
-      const isDuplicate = companies.some(c => c.name && c.name.toLowerCase() === companyFormData.name.trim().toLowerCase());
-      if (isDuplicate) {
-        alert('A company with this name already exists.');
-        return;
-      }
+    const isDuplicate = companies.some(
+      c => c.name.toLowerCase() === companyFormData.name.trim().toLowerCase() && c.id !== editingCompanyId
+    );
+    if (isDuplicate) {
+      alert("A company with this name already exists.");
+      return;
     }
 
     try {
@@ -171,163 +210,257 @@ export default function Settings() {
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Loading settings...</div>;
 
+  if (user && user.role !== 'admin') {
+    return (
+      <div className="card p-12 text-center max-w-lg mx-auto mt-12 space-y-4">
+        <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-800 font-display">Administrator Access Required</h2>
+        <p className="text-sm text-slate-500">
+          Delivery & Online Apps configuration and settings are reserved for administrators only.
+        </p>
+        <div className="pt-2">
+          <Link to="/" className="btn-primary inline-flex items-center gap-2">
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-center justify-center mb-8">
+      {/* Top Header */}
+      <div className="flex flex-col items-center justify-center mb-6">
         <div className="flex items-center gap-2 mb-2">
           <SettingsIcon className="w-6 h-6 text-slate-700" />
           <h1 className="text-2xl font-bold text-slate-900 font-display">Settings</h1>
+          <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-200 ml-1 uppercase tracking-wider">
+            Admin Only
+          </span>
         </div>
-        <p className="text-sm text-slate-500 mb-4">Manage companies, stores, suppliers, and budgets.</p>
+        <p className="text-sm text-slate-500 mb-5 text-center max-w-xl">
+          Manage dynamic delivery apps (add, hide, disable), company details, suppliers, and system configuration.
+        </p>
+
+        {/* Settings Navigation Tabs */}
+        <div className="inline-flex flex-wrap items-center justify-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-xs">
+          <button
+            type="button"
+            onClick={() => handleTabChange('apps')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'apps'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>Delivery & Sales Apps</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => handleTabChange('companies')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'companies'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+            }`}
+          >
+            <Briefcase className="w-4 h-4" />
+            <span>Companies</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange('suppliers')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'suppliers'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Suppliers</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange('all')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeTab === 'all'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/70'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>All Settings</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
-        {/* Manage Companies */}
-        <div className="card overflow-hidden">
-          <div className="bg-indigo-600 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-white" />
-              <h3 className="text-white font-medium text-sm">Manage Companies</h3>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleExportCompaniesPDF} className="text-white hover:text-red-200 transition-colors" title="Export PDF">
-                <Download className="w-4 h-4" />
-              </button>
-              <button onClick={handleExportCompaniesExcel} className="text-white hover:text-emerald-200 transition-colors" title="Export Excel">
-                <FileSpreadsheet className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="p-5 space-y-5">
-            <form onSubmit={handleSaveCompany} className="space-y-4">
-              <h4 className="text-sm font-bold text-slate-900 mb-2">{editingCompanyId ? 'Edit Company' : 'Add New Company'}</h4>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="label-text">Company Name <span className="text-red-500">*</span></label>
-                  <input type="text" required className="input-field" value={companyFormData.name} onChange={e => setCompanyFormData({...companyFormData, name: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label-text">Telephone</label>
-                  <input type="text" className="input-field" value={companyFormData.telephone} onChange={e => setCompanyFormData({...companyFormData, telephone: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label-text">Mobile Phone</label>
-                  <input type="text" className="input-field" value={companyFormData.phone} onChange={e => setCompanyFormData({...companyFormData, phone: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label-text">Email</label>
-                  <input type="email" className="input-field" value={companyFormData.email} onChange={e => setCompanyFormData({...companyFormData, email: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label-text">Tax Number</label>
-                  <input type="text" className="input-field" value={companyFormData.taxNumber} onChange={e => setCompanyFormData({...companyFormData, taxNumber: e.target.value})} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="label-text">Location / Address</label>
-                  <input type="text" className="input-field" value={companyFormData.location} onChange={e => setCompanyFormData({...companyFormData, location: e.target.value})} />
-                </div>
-              </div>
-              
-              <div className="flex gap-3 pt-2">
-                <button type="submit" className="btn-primary bg-indigo-600 hover:bg-indigo-700">
-                  <PlusCircle className="w-4 h-4 mr-2" /> {editingCompanyId ? 'Update' : 'Add Company'}
-                </button>
-                {editingCompanyId && (
-                  <button type="button" onClick={() => { setEditingCompanyId(null); setCompanyFormData(initialCompanyForm); }} className="btn-secondary">
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </form>
-            <hr className="border-slate-100" />
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-3">Existing Companies</h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                {companies.length === 0 ? (
-                  <p className="text-sm text-slate-500">No companies found.</p>
-                ) : (
-                  companies.map(company => (
-                    <div key={company.id} className="flex justify-between items-center border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
-                      <div>
-                        <span className="text-sm font-medium text-slate-700 block">{company.name || 'Unnamed Company'}</span>
-                        <span className="text-xs text-slate-500">{company.taxNumber ? `Tax: ${company.taxNumber}` : 'No Tax ID'}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEditCompany(company)} className="text-brand-600 hover:text-brand-900 transition-colors p-1"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteCompany(company.id)} className="text-red-500 hover:text-red-700 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Tab Content: Delivery & Sales Apps */}
+      {(activeTab === 'apps' || activeTab === 'all') && (
+        <div className="max-w-7xl mx-auto space-y-4">
+          <SalesAppsManager />
         </div>
+      )}
 
-        {/* Manage Suppliers */}
-        <div className="card overflow-hidden">
-          <div className="bg-brand-600 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-white" />
-              <h3 className="text-white font-medium text-sm">Manage Suppliers</h3>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleExportPDF} className="text-white hover:text-red-200 transition-colors" title="Export PDF">
-                <Download className="w-4 h-4" />
-              </button>
-              <button onClick={handleExportExcel} className="text-white hover:text-emerald-200 transition-colors" title="Export Excel">
-                <FileSpreadsheet className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="p-5 space-y-5">
-            <form onSubmit={handleSaveSupplier} className="space-y-4">
-              <h4 className="text-sm font-bold text-slate-900 mb-2">{editingSupplierId ? 'Edit Supplier' : 'Add New Supplier'}</h4>
-              <div>
-                <label className="label-text">Supplier Name <span className="text-red-500">*</span></label>
-                <input type="text" required className="input-field" value={newSupplierName} onChange={e => setNewSupplierName(e.target.value)} />
-              </div>
-              
-              <div>
-                <label className="label-text">Phone Number</label>
-                <input type="text" className="input-field" value={newSupplierPhone} onChange={e => setNewSupplierPhone(e.target.value)} />
-              </div>
-              
-              <div className="flex gap-3 pt-2">
-                <button type="submit" className="btn-primary">
-                  <PlusCircle className="w-4 h-4 mr-2" /> {editingSupplierId ? 'Update' : 'Add Supplier'}
-                </button>
-                {editingSupplierId && (
-                  <button type="button" onClick={() => { setEditingSupplierId(null); setNewSupplierName(''); setNewSupplierPhone(''); }} className="btn-secondary">
-                    Cancel
+      {/* Tab Content: Companies and Suppliers */}
+      {(activeTab === 'companies' || activeTab === 'suppliers' || activeTab === 'all') && (
+        <div className={`grid grid-cols-1 ${activeTab === 'all' ? 'lg:grid-cols-2 max-w-7xl' : 'max-w-4xl'} gap-6 mx-auto`}>
+          {/* Manage Companies */}
+          {(activeTab === 'companies' || activeTab === 'all') && (
+            <div className="card overflow-hidden">
+              <div className="bg-indigo-600 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-white" />
+                  <h3 className="text-white font-medium text-sm">Manage Companies</h3>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleExportCompaniesPDF} className="text-white hover:text-red-200 transition-colors" title="Export PDF">
+                    <Download className="w-4 h-4" />
                   </button>
-                )}
+                  <button onClick={handleExportCompaniesExcel} className="text-white hover:text-emerald-200 transition-colors" title="Export Excel">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </form>
-            <hr className="border-slate-100" />
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-3">Existing Suppliers</h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                {suppliers.length === 0 ? (
-                  <p className="text-sm text-slate-500">No suppliers found.</p>
-                ) : (
-                  suppliers.map(supplier => (
-                    <div key={supplier.id} className="flex justify-between items-center border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
-                      <span className="text-sm font-medium text-slate-700">{supplier.name} <span className="text-xs text-slate-400 font-normal ml-1">({supplier.phone || 'N/A'})</span></span>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEditSupplier(supplier)} className="text-brand-600 hover:text-brand-900 transition-colors p-1"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-500 hover:text-red-700 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
-                      </div>
+              <div className="p-5 space-y-5">
+                <form onSubmit={handleSaveCompany} className="space-y-4">
+                  <h4 className="text-sm font-bold text-slate-900 mb-2">{editingCompanyId ? 'Edit Company' : 'Add New Company'}</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="label-text">Company Name <span className="text-red-500">*</span></label>
+                      <input type="text" required className="input-field" value={companyFormData.name} onChange={e => setCompanyFormData({...companyFormData, name: e.target.value})} />
                     </div>
-                  ))
-                )}
+                    <div>
+                      <label className="label-text">Telephone</label>
+                      <input type="text" className="input-field" value={companyFormData.telephone} onChange={e => setCompanyFormData({...companyFormData, telephone: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text">Mobile Phone</label>
+                      <input type="text" className="input-field" value={companyFormData.phone} onChange={e => setCompanyFormData({...companyFormData, phone: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text">Email</label>
+                      <input type="email" className="input-field" value={companyFormData.email} onChange={e => setCompanyFormData({...companyFormData, email: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-text">Tax Number</label>
+                      <input type="text" className="input-field" value={companyFormData.taxNumber} onChange={e => setCompanyFormData({...companyFormData, taxNumber: e.target.value})} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="label-text">Location / Address</label>
+                      <input type="text" className="input-field" value={companyFormData.location} onChange={e => setCompanyFormData({...companyFormData, location: e.target.value})} />
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 pt-2">
+                    <button type="submit" className="btn-primary bg-indigo-600 hover:bg-indigo-700">
+                      <PlusCircle className="w-4 h-4 mr-2" /> {editingCompanyId ? 'Update' : 'Add Company'}
+                    </button>
+                    {editingCompanyId && (
+                      <button type="button" onClick={() => { setEditingCompanyId(null); setCompanyFormData(initialCompanyForm); }} className="btn-secondary">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+                <hr className="border-slate-100" />
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 mb-3">Existing Companies</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {companies.length === 0 ? (
+                      <p className="text-sm text-slate-500">No companies found.</p>
+                    ) : (
+                      companies.map(company => (
+                        <div key={company.id} className="flex justify-between items-center border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                          <div>
+                            <span className="text-sm font-medium text-slate-700 block">{company.name || 'Unnamed Company'}</span>
+                            <span className="text-xs text-slate-500">{company.taxNumber ? `Tax: ${company.taxNumber}` : 'No Tax ID'}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleEditCompany(company)} className="text-brand-600 hover:text-brand-900 transition-colors p-1"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteCompany(company.id)} className="text-red-500 hover:text-red-700 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
 
-      </div>
+          {/* Manage Suppliers */}
+          {(activeTab === 'suppliers' || activeTab === 'all') && (
+            <div className="card overflow-hidden">
+              <div className="bg-brand-600 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-white" />
+                  <h3 className="text-white font-medium text-sm">Manage Suppliers</h3>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleExportPDF} className="text-white hover:text-red-200 transition-colors" title="Export PDF">
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleExportExcel} className="text-white hover:text-emerald-200 transition-colors" title="Export Excel">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-5 space-y-5">
+                <form onSubmit={handleSaveSupplier} className="space-y-4">
+                  <h4 className="text-sm font-bold text-slate-900 mb-2">{editingSupplierId ? 'Edit Supplier' : 'Add New Supplier'}</h4>
+                  <div>
+                    <label className="label-text">Supplier Name <span className="text-red-500">*</span></label>
+                    <input type="text" required className="input-field" value={newSupplierName} onChange={e => setNewSupplierName(e.target.value)} />
+                  </div>
+                  
+                  <div>
+                    <label className="label-text">Phone Number</label>
+                    <input type="text" className="input-field" value={newSupplierPhone} onChange={e => setNewSupplierPhone(e.target.value)} />
+                  </div>
+                  
+                  <div className="flex gap-3 pt-2">
+                    <button type="submit" className="btn-primary">
+                      <PlusCircle className="w-4 h-4 mr-2" /> {editingSupplierId ? 'Update' : 'Add Supplier'}
+                    </button>
+                    {editingSupplierId && (
+                      <button type="button" onClick={() => { setEditingSupplierId(null); setNewSupplierName(''); setNewSupplierPhone(''); }} className="btn-secondary">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+                <hr className="border-slate-100" />
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 mb-3">Existing Suppliers</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {suppliers.length === 0 ? (
+                      <p className="text-sm text-slate-500">No suppliers found.</p>
+                    ) : (
+                      suppliers.map(supplier => (
+                        <div key={supplier.id} className="flex justify-between items-center border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                          <span className="text-sm font-medium text-slate-700">{supplier.name} <span className="text-xs text-slate-400 font-normal ml-1">({supplier.phone || 'N/A'})</span></span>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleEditSupplier(supplier)} className="text-brand-600 hover:text-brand-900 transition-colors p-1"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-500 hover:text-red-700 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

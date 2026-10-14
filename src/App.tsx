@@ -52,7 +52,11 @@ function AppRoutes() {
         <Route path="staff" element={<Staff />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="stores" element={<Stores />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="settings" element={
+          <ProtectedRoute adminOnly>
+            <Settings />
+          </ProtectedRoute>
+        } />
         <Route path="inventory" element={<Inventory />} />
         <Route path="admin" element={
           <ProtectedRoute adminOnly>
@@ -65,6 +69,10 @@ function AppRoutes() {
 }
 
 export default function App() {
+  React.useEffect(() => {
+    document.title = "BudgetSystem";
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

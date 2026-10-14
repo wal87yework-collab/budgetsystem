@@ -3,6 +3,9 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+const budgetsystemLogo = "/src/assets/images/budgetsystem_logo_1781360364801.jpg";
+
 import { 
   LayoutDashboard, 
   TrendingUp, 
@@ -16,7 +19,8 @@ import {
   LogOut,
   Menu,
   X,
-  Bell
+  Bell,
+  FileSpreadsheet
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 
@@ -114,7 +118,7 @@ export default function Layout() {
     { name: 'Staff', path: '/staff', icon: Users, roles: ['admin', 'store'] },
     { name: 'Schedule', path: '/schedule', icon: CalendarDays, roles: ['admin', 'store'] },
     { name: 'Stores', path: '/stores', icon: Store, roles: ['admin', 'store'] },
-    { name: 'Inventory', path: '/inventory', icon: Package, roles: ['admin'] },
+    { name: 'Budget tracking', path: '/inventory', icon: FileSpreadsheet, roles: ['admin', 'store'] },
     { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin'] },
   ];
 
@@ -134,9 +138,17 @@ export default function Layout() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-slate-900 text-slate-300">
-      <div className="flex items-center h-16 px-6 bg-slate-950/50">
-        <Store className="w-6 h-6 text-brand-500" />
-        <span className="ml-3 text-lg font-bold text-white font-display tracking-wide">BudgetSystem</span>
+      <div className="flex items-center h-16 px-6 bg-slate-950/50 gap-3">
+        <img
+          src={budgetsystemLogo}
+          alt="BudgetSystem"
+          className="w-9 h-9 rounded-lg object-cover border border-slate-700 shadow-md"
+          referrerPolicy="no-referrer"
+        />
+        <div className="flex flex-col">
+          <span className="text-base font-black text-white font-display tracking-wider leading-tight uppercase">BudgetSystem</span>
+          <span className="text-[9px] text-amber-400 font-mono tracking-[0.22em] font-black leading-none mt-1">BUDGET - SYSTEM</span>
+        </div>
       </div>
       
       <div className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -279,11 +291,24 @@ export default function Layout() {
           </div>
           
           {/* Global Footer */}
-          <footer className="w-full py-4 px-6 border-t border-slate-200 bg-white mt-auto">
-            <div className="max-w-7xl mx-auto text-center">
-              <p className="text-sm text-slate-500 font-medium">
-                Developer Waleed Al-Qadasi -0503189758 &copy; 2026 BudgetSystem. All rights reserved.
+          <footer className="w-full py-5 px-6 border-t border-slate-200 bg-white mt-auto">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+              {/* Elegant Clear Copyright Text */}
+              <p className="text-xs text-slate-700 font-medium font-sans">
+                &copy; 2026 <span className="font-extrabold text-slate-900 tracking-tight">Waleed Al-Qadasi BudgetSystem</span>. All rights reserved.
               </p>
+
+              {/* Developer Attribute Badge details with premium contrast & amber accents */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 text-xs">
+                <span className="text-slate-600 font-semibold">System Developer:</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-950 border border-amber-500/30 font-bold shadow-sm">
+                  Waleed Al-Qadasi
+                </span>
+                <span className="text-slate-300 hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-900 text-white font-mono font-bold shadow-sm">
+                  📞 0503189758
+                </span>
+              </div>
             </div>
           </footer>
         </main>

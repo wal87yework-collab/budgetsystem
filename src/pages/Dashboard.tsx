@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, Users, Store, DollarSign, ArrowUpRight, ArrowDownRight, 
-  Receipt, Wallet, CalendarRange, BarChart3, Activity, Target
+  Receipt, Wallet, CalendarRange, BarChart3, Activity, Target, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [storeCount, setStoreCount] = useState(0);
   const [storesData, setStoresData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const { startDate, endDate } = useMemo(() => {
     const today = new Date();
@@ -51,6 +52,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setLoading(true);
+    setDbError(null);
     let unsubSales = () => {};
     let unsubExpenses = () => {};
     let unsubStaff = () => {};
@@ -64,10 +66,17 @@ export default function Dashboard() {
       qSales = query(collection(db, 'sales'), where('date', '>=', startDate), where('date', '<=', endDate));
     }
 
-    unsubSales = onSnapshot(qSales, (snapshot: any) => {
-      const salesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
-      setSales(salesData);
-    });
+    unsubSales = onSnapshot(
+      qSales, 
+      (snapshot: any) => {
+        const salesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
+        setSales(salesData);
+      },
+      (error) => {
+        console.error("Sales snapshot error:", error);
+        setDbError(`Sales data error: ${error.message || error}`);
+      }
+    );
 
     // Fetch Expenses
     let qExpenses: any = collection(db, 'expenses');
@@ -77,31 +86,53 @@ export default function Dashboard() {
       qExpenses = query(collection(db, 'expenses'), where('date', '>=', startDate), where('date', '<=', endDate));
     }
 
-    unsubExpenses = onSnapshot(qExpenses, (snapshot: any) => {
-      const expensesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
-      setExpenses(expensesData);
-    });
+    unsubExpenses = onSnapshot(
+      qExpenses, 
+      (snapshot: any) => {
+        const expensesData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
+        setExpenses(expensesData);
+      },
+      (error) => {
+        console.error("Expenses snapshot error:", error);
+        setDbError(`Expenses data error: ${error.message || error}`);
+      }
+    );
 
     // Fetch Staff Check
     const qStaff: any = user?.role === 'store'
       ? query(collection(db, 'staff'), where('storeId', '==', user.username))
       : collection(db, 'staff');
     
-    unsubStaff = onSnapshot(qStaff, (snapshot: any) => {
-      setStaffCount(snapshot.docs.length);
-    });
+    unsubStaff = onSnapshot(
+      qStaff, 
+      (snapshot: any) => {
+        setStaffCount(snapshot.docs.length);
+      },
+      (error) => {
+        console.error("Staff snapshot error:", error);
+        setDbError(`Staff data error: ${error.message || error}`);
+      }
+    );
 
     // Fetch Stores Check
     const qStores: any = user?.role === 'store'
       ? query(collection(db, 'stores'), where('name', '==', user.username))
       : collection(db, 'stores');
       
-    unsubStores = onSnapshot(qStores, (snapshot: any) => {
-      const sData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
-      setStoresData(sData);
-      setStoreCount(sData.length);
-      setLoading(false);
-    });
+    unsubStores = onSnapshot(
+      qStores, 
+      (snapshot: any) => {
+        const sData = snapshot.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
+        setStoresData(sData);
+        setStoreCount(sData.length);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Stores snapshot error:", error);
+        setDbError(`Stores data error: ${error.message || error}`);
+        setLoading(false);
+      }
+    );
 
     return () => {
       unsubSales();
@@ -175,6 +206,19 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {dbError && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-bold text-amber-800 text-sm">Database Sync Status</h3>
+            <p className="text-xs text-amber-700 mt-1 font-mono break-all">{dbError}</p>
+            <p className="text-[10px] text-slate-500 mt-1.5">
+              Potential steps: (1) Ensure Email/Password provider is enabled in Firebase Console Auth providers. (2) Ensure you have initialized your Firestore Database in the default region or the matching region. (3) Verify Firestore Rules allow reading.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 font-display">Welcome back, {user?.username}!</h1>

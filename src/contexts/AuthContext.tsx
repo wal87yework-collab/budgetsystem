@@ -49,8 +49,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: firebaseUser.email || ''
             });
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
+        } catch (error: any) {
+          const errMsg = error?.message || '';
+          if (errMsg.toLowerCase().includes('offline') || !navigator.onLine) {
+            console.warn("Operating offline, using local fallbacks. Details:", error.message || error);
+          } else {
+            console.warn("Note (user fetch fallback configured):", error.message || error);
+          }
+          
+          // Gracefully handle offline or network errors by falling back on the Firebase User profile
+          const username = firebaseUser.email?.split('@')[0] || 'unknown';
+          const role = username.toLowerCase() === 'admin' ? 'admin' : 'store';
+          
+          // Use storeId matching if the name contains digits or represents a store
+          const isStore = role === 'store';
+          setUser({
+            uid: firebaseUser.uid,
+            username,
+            role,
+            email: firebaseUser.email || '',
+            ...(isStore ? { storeId: username } : {})
+          });
         }
       } else {
         setUser(null);
